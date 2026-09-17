@@ -341,7 +341,7 @@
   <header class="hero">
     <div class="hero-mark"><span class="basket">🧺</span> Smartket</div>
     <h1>Arma tu lista, compara precios, ahorra en cada compra.</h1>
-    <p class="hero-sub">Una herramienta gratuita para que cualquier persona ahorre tiempo y plata al ir al supermercado. Tus listas y precios quedan guardados en este mismo dispositivo.</p>
+    <p class="hero-sub">Una herramienta gratuita para que cualquier persona ahorre tiempo y plata al ir al supermercado. Puedes buscar precios automáticamente o anotar los que veas tú mismo — tu lista queda guardada en este mismo dispositivo.</p>
   </header>
 
   <section class="block block-list">
@@ -401,6 +401,43 @@
   var LS_LIST = "smarket_list_v1";
   var LS_PRICES = "smarket_prices_v1";
   var LS_HISTORY = "smarket_history_v1";
+
+  // Conexion de solo lectura a la base de precios que junta el scraper
+  // nocturno. La llave "anon" es publica a proposito: en Supabase las
+  // reglas de seguridad (RLS) solo permiten SELECT con esta llave, nunca
+  // escribir, asi que no hay riesgo en que quede visible en el navegador.
+  var SUPABASE_URL = "https://zvbkcrzluztuuwvkquny.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2YmtjcnpsdXp0dXV3dmtxdW55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2NzgzMzYsImV4cCI6MjEwNTI1NDMzNn0.7MWoLOghCwDdeeHLuYGny1a7OJg2wmknxp6UBVqu2Ro";
+
+  async function fetchPreciosAutomaticos(nombreItem){
+    var termino = normalize(nombreItem);
+    var url = SUPABASE_URL + "/rest/v1/precios_ultimos"
+      + "?select=precio_actual,nombre,supermercados(nombre)"
+      + "&termino_busqueda=ilike." + encodeURIComponent("*" + termino + "*")
+      + "&order=precio_actual.asc"
+      + "&limit=200";
+    try{
+      var res = await fetch(url, {
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + SUPABASE_ANON_KEY
+        }
+      });
+      if(!res.ok) return {};
+      var rows = await res.json();
+      var porSupermercado = {};
+      rows.forEach(function(row){
+        var market = row.supermercados && row.supermercados.nombre;
+        if(!market || row.precio_actual == null) return;
+        if(!porSupermercado[market] || row.precio_actual < porSupermercado[market].price){
+          porSupermercado[market] = {price: row.precio_actual, date: new Date().toISOString(), auto: true};
+        }
+      });
+      return porSupermercado;
+    }catch(e){
+      return {};
+    }
+  }
 
   var SUPERMARKETS = ["Jumbo","Líder","Santa Isabel","Unimarc","Tottus","Ekono","Alvi","Acuenta","OK Market","Mayorista 10"];
 
@@ -519,6 +556,28 @@
       row.appendChild(del);
       li.appendChild(row);
 
+      var autoBtn = document.createElement("button");
+      autoBtn.type = "button";
+      autoBtn.className = "btn-ghost btn-small";
+      autoBtn.style.marginTop = "8px";
+      autoBtn.textContent = "Buscar precios automáticos";
+      autoBtn.addEventListener("click", function(){
+        autoBtn.disabled = true;
+        autoBtn.textContent = "Buscando...";
+        fetchPreciosAutomaticos(item.name).then(function(encontrados){
+          var key = normalize(item.name);
+          if(Object.keys(encontrados).length > 0){
+            state.prices[key] = Object.assign({}, state.prices[key], encontrados);
+            persistPrices();
+          }
+          autoBtn.disabled = false;
+          autoBtn.textContent = "Buscar precios automáticos";
+          renderList();
+          renderCompare();
+        });
+      });
+      li.appendChild(autoBtn);
+
       // price chips
       var chipsWrap = document.createElement("div");
       chipsWrap.className = "price-chips";
@@ -528,7 +587,7 @@
       markets.forEach(function(m){
         var chip = document.createElement("span");
         chip.className = "chip" + (best && best.market === m ? " cheapest" : "");
-        chip.textContent = m + ": " + fmtMoney(priceMap[m].price);
+        chip.textContent = m + ": " + fmtMoney(priceMap[m].price) + (priceMap[m].auto ? " · auto" : "");
         chipsWrap.appendChild(chip);
       });
       if(markets.length > 0){ li.appendChild(chipsWrap); }
