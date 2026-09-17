@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smartket — lista y comparador de precios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF2E5;
+    --card:#FFFFFF;
+    --ink:#1E3324;
+    --ink-soft:#4B5F49;
+    --line: rgba(30,51,36,0.15);
+    --accent:#E3A73A;
+    --accent-ink:#3A2A08;
+    --good:#2F6B3C;
+    --good-bg:#E4F0E1;
+    --warn:#C1443B;
+    --warn-bg:#FBE7E4;
+    --radius-card: 18px;
+    --radius-pill: 999px;
+    --font-head: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg:#12190F;
+      --card:#1B2419;
+      --ink:#EDEFE6;
+      --ink-soft:#AEBBA8;
+      --line: rgba(237,239,230,0.14);
+      --accent:#E8B655;
+      --accent-ink:#241A03;
+      --good:#8FD69B;
+      --good-bg:#1E3323;
+      --warn:#F0958C;
+      --warn-bg:#3A211E;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12190F;
+    --card:#1B2419;
+    --ink:#EDEFE6;
+    --ink-soft:#AEBBA8;
+    --line: rgba(237,239,230,0.14);
+    --accent:#E8B655;
+    --accent-ink:#241A03;
+    --good:#8FD69B;
+    --good-bg:#1E3323;
+    --warn:#F0958C;
+    --warn-bg:#3A211E;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{
+    max-width:640px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+  h1,h2{
+    font-family:var(--font-head);
+    font-weight:600;
+    margin:0 0 8px;
+    color:var(--ink);
+  }
+  h2{font-size:1.28rem; letter-spacing:0.1px;}
+  p{margin:0 0 12px; color:var(--ink-soft);}
+  .hint{font-size:0.92rem;}
+
+  .hero{padding:6px 2px 30px;}
+  .hero-mark{
+    font-family:var(--font-head);
+    font-weight:700;
+    font-size:1.5rem;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    margin-bottom:16px;
+    color:var(--ink);
+  }
+  .hero-mark .basket{font-size:1.35rem;}
+  .hero h1{
+    font-size:1.7rem;
+    line-height:1.28;
+    max-width:24ch;
+  }
+  .hero-sub{font-size:1rem; max-width:38ch;}
+
+  .block{
+    padding:22px 0;
+    border-top:1px solid var(--line);
+  }
+  .block:first-of-type{border-top:1px solid var(--line);}
+
+  form.add-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  input, select, button{
+    font-family:var(--font-body);
+    font-size:0.96rem;
+  }
+  input[type=text], input[type=number]{
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:10px;
+    padding:10px 12px;
+  }
+  input[name=itemName]{flex:1 1 150px; min-width:0;}
+  input[name=itemQty]{width:70px;}
+  select{
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:10px;
+    padding:10px 10px;
+  }
+  select.unit{width:98px;}
+
+  button{
+    cursor:pointer;
+    border:none;
+    border-radius:10px;
+    padding:10px 14px;
+    font-weight:600;
+  }
+  button:focus-visible, input:focus-visible, select:focus-visible, details summary:focus-visible{
+    outline:3px solid var(--accent);
+    outline-offset:2px;
+  }
+  .btn-primary{
+    background:var(--ink);
+    color:var(--bg);
+  }
+  .btn-primary:hover{opacity:0.92;}
+  .btn-ghost{
+    background:transparent;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+  }
+  .btn-ghost:hover{border-color:var(--ink-soft);}
+  .btn-small{
+    padding:6px 10px;
+    font-size:0.84rem;
+    border-radius:8px;
+  }
+
+  ul.items{list-style:none; margin:0; padding:0;}
+  .item{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius-card);
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .item-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .item-check{
+    width:22px;height:22px;
+    border-radius:7px;
+    border:1.5px solid var(--ink-soft);
+    background:transparent;
+    display:flex; align-items:center; justify-content:center;
+    flex:0 0 auto;
+    padding:0;
+  }
+  .item-check[data-done="true"]{
+    background:var(--good);
+    border-color:var(--good);
+    color:var(--card);
+  }
+  .item-main{flex:1 1 auto; min-width:0;}
+  .item-name{font-weight:600; word-break:break-word;}
+  .item-name.done{text-decoration:line-through; color:var(--ink-soft); font-weight:500;}
+  .item-qty{font-size:0.85rem; color:var(--ink-soft);}
+  .item-del{
+    background:transparent;
+    border:none;
+    color:var(--ink-soft);
+    font-size:1.1rem;
+    padding:4px 6px;
+    line-height:1;
+  }
+  .item-del:hover{color:var(--warn);}
+
+  .price-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:10px;
+  }
+  .chip{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:var(--radius-pill);
+    padding:4px 10px;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .chip.cheapest{
+    background:var(--good-bg);
+    color:var(--good);
+    border-color:transparent;
+    font-weight:600;
+  }
+  details.price-add{margin-top:10px;}
+  details.price-add summary{
+    list-style:none;
+    cursor:pointer;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  details.price-add summary::-webkit-details-marker{display:none;}
+  details.price-add summary::before{content:"+ "; color:var(--accent-ink); background:var(--accent); border-radius:50%; padding:0 5px; margin-right:3px;}
+  .price-add-row{
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+    flex-wrap:wrap;
+  }
+  .price-add-row select{flex:1 1 120px;}
+  .price-add-row input{width:100px;}
+
+  .empty{
+    padding:22px 16px;
+    text-align:center;
+    color:var(--ink-soft);
+    background:var(--card);
+    border:1px dashed var(--line);
+    border-radius:var(--radius-card);
+    font-size:0.92rem;
+  }
+
+  .list-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:14px;
+  }
+
+  .compare-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius-card);
+    padding:14px 16px;
+    margin-bottom:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .compare-card.best{
+    border-color:var(--good);
+    background:var(--good-bg);
+  }
+  .compare-name{font-weight:600;}
+  .compare-meta{font-size:0.82rem; color:var(--ink-soft);}
+  .compare-total{font-family:var(--font-head); font-size:1.25rem; font-weight:600;}
+  .badge-best{
+    display:inline-block;
+    font-size:0.72rem;
+    font-weight:700;
+    background:var(--good);
+    color:var(--card);
+    padding:2px 8px;
+    border-radius:var(--radius-pill);
+    margin-left:8px;
+    vertical-align:middle;
+  }
+
+  .history-panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius-card);
+    padding:12px 14px;
+    margin-top:10px;
+  }
+  .history-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+    gap:10px;
+  }
+  .history-row:last-child{border-bottom:none;}
+
+  .support-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius-card);
+    padding:18px;
+  }
+  .support-card dl{
+    margin:12px 0 0;
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:6px 14px;
+    font-size:0.95rem;
+  }
+  .support-card dt{color:var(--ink-soft);}
+  .support-card dd{margin:0; font-weight:600;}
+  .fine{font-size:0.82rem; margin-top:12px; margin-bottom:0;}
+
+  footer{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:0.85rem;
+    padding-top:30px;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .item, .compare-card{transition:background 0.15s ease, border-color 0.15s ease;}
+  }
+
+  ::-webkit-scrollbar{height:6px;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="hero-mark"><span class="basket">🧺</span> Smartket</div>
+    <h1>Arma tu lista, compara precios, ahorra en cada compra.</h1>
+    <p class="hero-sub">Una herramienta gratuita para que cualquier persona ahorre tiempo y plata al ir al supermercado. Tus listas y precios quedan guardados en este mismo dispositivo.</p>
+  </header>
+
+  <section class="block block-list">
+    <h2>Tu lista de esta semana</h2>
+    <form class="add-row" id="addForm">
+      <input type="text" name="itemName" placeholder="Ej: arroz, leche, detergente" required>
+      <input type="number" name="itemQty" placeholder="1" min="0" step="0.1" value="1">
+      <select class="unit" name="itemUnit">
+        <option value="un">unidad</option>
+        <option value="kg">kg</option>
+        <option value="g">gramos</option>
+        <option value="L">litro</option>
+        <option value="paquete">paquete</option>
+      </select>
+      <button type="submit" class="btn-primary">Agregar</button>
+    </form>
+
+    <ul class="items" id="listItems"></ul>
+    <div class="empty" id="emptyList" hidden>Tu lista está vacía. Agrega el primer producto arriba.</div>
+
+    <div class="list-actions">
+      <button type="button" class="btn-ghost btn-small" id="btnRepeat">Repetir lista anterior</button>
+      <button type="button" class="btn-ghost btn-small" id="btnArchive">Guardar y empezar de nuevo</button>
+      <button type="button" class="btn-ghost btn-small" id="btnClear">Vaciar lista</button>
+    </div>
+    <div class="history-panel" id="historyPanel" hidden></div>
+  </section>
+
+  <section class="block block-compare">
+    <h2>¿Dónde te conviene comprar?</h2>
+    <p class="hint">Con los precios que has anotado para los productos de tu lista, esto es lo que gastarías en cada supermercado.</p>
+    <div id="compareResult"></div>
+  </section>
+
+  <section class="block block-about">
+    <h2>Sobre Smartket</h2>
+    <p>Smartket es un proyecto gratuito de SMSI. No tiene publicidad, no vende tus datos y no necesitas crear ninguna cuenta: toda la información se guarda solo en tu teléfono o computador.</p>
+    <div class="support-card">
+      <p style="margin-bottom:4px;">Si Smartket te sirvió y quieres ayudar a que siga gratis para más gente, puedes aportar lo que quieras vía transferencia:</p>
+      <dl>
+        <dt>Nombre</dt><dd id="donName">Francisco Flores Villegas</dd>
+        <dt>RUT</dt><dd id="donRut">16.350.546-0</dd>
+        <dt>Banco</dt><dd id="donBank">BancoEstado</dd>
+        <dt>Cuenta</dt><dd id="donAccount">CuentaRUT — N.º 16350546-0</dd>
+      </dl>
+      <p class="fine">Es totalmente voluntario. Smartket funciona igual de bien sin hacer ningún aporte.</p>
+    </div>
+  </section>
+
+  <footer>Hecho por SMSI · Servicio de Mantención y Soluciones Informáticas</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var LS_LIST = "smarket_list_v1";
+  var LS_PRICES = "smarket_prices_v1";
+  var LS_HISTORY = "smarket_history_v1";
+
+  var SUPERMARKETS = ["Jumbo","Líder","Santa Isabel","Unimarc","Tottus","Ekono","Alvi","Acuenta","OK Market","Mayorista 10"];
+
+  function safeGet(key, fallback){
+    try{
+      var raw = localStorage.getItem(key);
+      if(raw === null) return fallback;
+      return JSON.parse(raw);
+    }catch(e){
+      return fallback;
+    }
+  }
+  function safeSet(key, value){
+    try{
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function normalize(name){
+    return name.trim().toLowerCase();
+  }
+  function uid(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+  function fmtMoney(n){
+    return "$" + Math.round(n).toLocaleString("es-CL");
+  }
+
+  var state = {
+    list: safeGet(LS_LIST, []),
+    prices: safeGet(LS_PRICES, {}),
+    history: safeGet(LS_HISTORY, [])
+  };
+
+  var listEl = document.getElementById("listItems");
+  var emptyEl = document.getElementById("emptyList");
+  var compareEl = document.getElementById("compareResult");
+  var historyPanel = document.getElementById("historyPanel");
+
+  function persistList(){ safeSet(LS_LIST, state.list); }
+  function persistPrices(){ safeSet(LS_PRICES, state.prices); }
+  function persistHistory(){ safeSet(LS_HISTORY, state.history); }
+
+  function getPricesFor(itemName){
+    var key = normalize(itemName);
+    return state.prices[key] || {};
+  }
+
+  function cheapestFor(itemName){
+    var p = getPricesFor(itemName);
+    var best = null;
+    Object.keys(p).forEach(function(market){
+      if(best === null || p[market].price < p[best].price){
+        best = market;
+      }
+    });
+    return best ? {market: best, price: p[best].price} : null;
+  }
+
+  function renderList(){
+    listEl.innerHTML = "";
+    if(state.list.length === 0){
+      emptyEl.hidden = false;
+    } else {
+      emptyEl.hidden = true;
+    }
+
+    state.list.forEach(function(item){
+      var li = document.createElement("li");
+      li.className = "item";
+
+      var row = document.createElement("div");
+      row.className = "item-row";
+
+      var check = document.createElement("button");
+      check.className = "item-check";
+      check.type = "button";
+      check.setAttribute("aria-label", item.done ? "Marcar como pendiente" : "Marcar como comprado");
+      check.setAttribute("data-done", item.done ? "true" : "false");
+      check.textContent = item.done ? "✓" : "";
+      check.addEventListener("click", function(){
+        item.done = !item.done;
+        persistList();
+        renderList();
+        renderCompare();
+      });
+
+      var main = document.createElement("div");
+      main.className = "item-main";
+      var nameEl = document.createElement("div");
+      nameEl.className = "item-name" + (item.done ? " done" : "");
+      nameEl.textContent = item.name;
+      var qtyEl = document.createElement("div");
+      qtyEl.className = "item-qty";
+      qtyEl.textContent = item.qty + " " + unitLabel(item.unit);
+      main.appendChild(nameEl);
+      main.appendChild(qtyEl);
+
+      var del = document.createElement("button");
+      del.className = "item-del";
+      del.type = "button";
+      del.setAttribute("aria-label", "Quitar " + item.name);
+      del.textContent = "✕";
+      del.addEventListener("click", function(){
+        state.list = state.list.filter(function(i){ return i.id !== item.id; });
+        persistList();
+        renderList();
+        renderCompare();
+      });
+
+      row.appendChild(check);
+      row.appendChild(main);
+      row.appendChild(del);
+      li.appendChild(row);
+
+      // price chips
+      var chipsWrap = document.createElement("div");
+      chipsWrap.className = "price-chips";
+      var priceMap = getPricesFor(item.name);
+      var best = cheapestFor(item.name);
+      var markets = Object.keys(priceMap).sort(function(a,b){ return priceMap[a].price - priceMap[b].price; });
+      markets.forEach(function(m){
+        var chip = document.createElement("span");
+        chip.className = "chip" + (best && best.market === m ? " cheapest" : "");
+        chip.textContent = m + ": " + fmtMoney(priceMap[m].price);
+        chipsWrap.appendChild(chip);
+      });
+      if(markets.length > 0){ li.appendChild(chipsWrap); }
+
+      // add price
+      var details = document.createElement("details");
+      details.className = "price-add";
+      var summary = document.createElement("summary");
+      summary.textContent = "Anotar precio visto";
+      var addRow = document.createElement("div");
+      addRow.className = "price-add-row";
+
+      var sel = document.createElement("select");
+      SUPERMARKETS.forEach(function(m){
+        var opt = document.createElement("option");
+        opt.value = m; opt.textContent = m;
+        sel.appendChild(opt);
+      });
+
+      var priceInput = document.createElement("input");
+      priceInput.type = "number";
+      priceInput.placeholder = "Precio $";
+      priceInput.min = "0";
+      priceInput.step = "1";
+
+      var saveBtn = document.createElement("button");
+      saveBtn.type = "button";
+      saveBtn.className = "btn-primary btn-small";
+      saveBtn.textContent = "Guardar";
+      saveBtn.addEventListener("click", function(){
+        var val = parseFloat(priceInput.value);
+        if(isNaN(val) || val <= 0) return;
+        var key = normalize(item.name);
+        if(!state.prices[key]) state.prices[key] = {};
+        state.prices[key][sel.value] = {price: val, date: new Date().toISOString()};
+        persistPrices();
+        priceInput.value = "";
+        details.open = false;
+        renderList();
+        renderCompare();
+      });
+
+      addRow.appendChild(sel);
+      addRow.appendChild(priceInput);
+      addRow.appendChild(saveBtn);
+      details.appendChild(summary);
+      details.appendChild(addRow);
+      li.appendChild(details);
+
+      listEl.appendChild(li);
+    });
+  }
+
+  function unitLabel(u){
+    var map = {un:"unidad", kg:"kg", g:"g", L:"L", paquete:"paquete"};
+    return map[u] || u;
+  }
+
+  function renderCompare(){
+    compareEl.innerHTML = "";
+    if(state.list.length === 0){
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "Agrega productos a tu lista para ver la comparación.";
+      compareEl.appendChild(empty);
+      return;
+    }
+
+    var totals = {};
+    SUPERMARKETS.forEach(function(m){ totals[m] = {sum:0, matched:0}; });
+
+    state.list.forEach(function(item){
+      var priceMap = getPricesFor(item.name);
+      var qty = parseFloat(item.qty) || 1;
+      Object.keys(priceMap).forEach(function(m){
+        if(!totals[m]) totals[m] = {sum:0, matched:0};
+        totals[m].sum += priceMap[m].price * qty;
+        totals[m].matched += 1;
+      });
+    });
+
+    var candidates = Object.keys(totals)
+      .map(function(m){ return {market:m, sum: totals[m].sum, matched: totals[m].matched}; })
+      .filter(function(c){ return c.matched > 0; })
+      .sort(function(a,b){
+        if(b.matched !== a.matched) return b.matched - a.matched;
+        return a.sum - b.sum;
+      });
+
+    if(candidates.length === 0){
+      var empty2 = document.createElement("div");
+      empty2.className = "empty";
+      empty2.textContent = "Aún no has anotado precios para los productos de tu lista. Ábrelos arriba y agrega lo que veas en la góndola.";
+      compareEl.appendChild(empty2);
+      return;
+    }
+
+    var maxMatched = candidates[0].matched;
+    var bestFull = candidates.find(function(c){ return c.matched === state.list.length; });
+    var topMarket = bestFull ? bestFull.market : candidates[0].market;
+
+    candidates.slice(0,6).forEach(function(c){
+      var card = document.createElement("div");
+      card.className = "compare-card" + (c.market === topMarket ? " best" : "");
+      var left = document.createElement("div");
+      var nameRow = document.createElement("div");
+      nameRow.className = "compare-name";
+      nameRow.textContent = c.market;
+      if(c.market === topMarket){
+        var badge = document.createElement("span");
+        badge.className = "badge-best";
+        badge.textContent = "Más conveniente";
+        nameRow.appendChild(badge);
+      }
+      var meta = document.createElement("div");
+      meta.className = "compare-meta";
+      meta.textContent = c.matched === state.list.length
+        ? "Precio de los " + c.matched + " productos"
+        : "Con precio para " + c.matched + " de " + state.list.length + " productos";
+      left.appendChild(nameRow);
+      left.appendChild(meta);
+
+      var total = document.createElement("div");
+      total.className = "compare-total";
+      total.textContent = fmtMoney(c.sum);
+
+      card.appendChild(left);
+      card.appendChild(total);
+      compareEl.appendChild(card);
+    });
+  }
+
+  document.getElementById("addForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    var name = (fd.get("itemName") || "").toString().trim();
+    if(!name) return;
+    var qty = parseFloat(fd.get("itemQty")) || 1;
+    var unit = fd.get("itemUnit");
+    state.list.push({id: uid(), name: name, qty: qty, unit: unit, done: false});
+    persistList();
+    e.target.reset();
+    e.target.querySelector("[name=itemQty]").value = "1";
+    renderList();
+    renderCompare();
+    e.target.querySelector("[name=itemName]").focus();
+  });
+
+  document.getElementById("btnClear").addEventListener("click", function(){
+    if(state.list.length === 0) return;
+    state.list = [];
+    persistList();
+    renderList();
+    renderCompare();
+  });
+
+  document.getElementById("btnArchive").addEventListener("click", function(){
+    if(state.list.length === 0) return;
+    state.history.unshift({id: uid(), date: new Date().toISOString(), items: state.list});
+    state.history = state.history.slice(0, 10);
+    persistHistory();
+    state.list = [];
+    persistList();
+    renderList();
+    renderCompare();
+  });
+
+  document.getElementById("btnRepeat").addEventListener("click", function(){
+    var panel = historyPanel;
+    if(!panel.hidden){ panel.hidden = true; return; }
+    panel.innerHTML = "";
+    if(state.history.length === 0){
+      panel.innerHTML = '<div class="hint">Todavía no tienes listas guardadas. Usa "Guardar y empezar de nuevo" para archivar tu lista actual y poder repetirla después.</div>';
+    } else {
+      state.history.forEach(function(h){
+        var row = document.createElement("div");
+        row.className = "history-row";
+        var d = new Date(h.date);
+        var label = document.createElement("div");
+        label.textContent = d.toLocaleDateString("es-CL", {day:"numeric", month:"short"}) + " · " + h.items.length + " productos";
+        var loadBtn = document.createElement("button");
+        loadBtn.className = "btn-primary btn-small";
+        loadBtn.textContent = "Cargar";
+        loadBtn.addEventListener("click", function(){
+          state.list = h.items.map(function(it){ return {id: uid(), name: it.name, qty: it.qty, unit: it.unit, done:false}; });
+          persistList();
+          renderList();
+          renderCompare();
+          panel.hidden = true;
+        });
+        row.appendChild(label);
+        row.appendChild(loadBtn);
+        panel.appendChild(row);
+      });
+    }
+    panel.hidden = false;
+  });
+
+  renderList();
+  renderCompare();
+})();
+</script>
+</body>
+</html>
