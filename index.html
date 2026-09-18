@@ -4,54 +4,63 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Smartket — lista y comparador de precios</title>
+<meta name="theme-color" content="#FF5A36">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Smartket">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAADrklEQVR4nO3dTVLbQBSFUUhlTbAXWF8Wk1WRgSZUpRJLvuqf133OmLI66s/PErbJ69fH2ws84sfoBVCbgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICI/By9gMn8+v34Zz7f26+jjFefiT4Vzb9sH9PGASXd/G3XkrYM6N50vtsvo80CapfOdztltE1AfdL5bo+M9riN71/PqIN2t/oEmmEXlx5FS0+gGep5mWYZbawb0FTbNtVibrVoQBNu2IRLusOK10DhVv3/kqXpgxe0XEBPb/DVre12oLmtFdATm5pv55CDTmOhgK5u5L27OPbo46xyET18/7q9Ak5mv88DtXvqH4+8ShknLTGBzu9ZhxeO84dYIrX6AU1Vz9UD1W+ofkAndb5oXeUa+aHiAZ18Bg/ZzpMHLT6EKgc0cz2XDl25ocoBMYGyAc0/fi4toOwQKhvQGcPrOUyyjDaWDoj2agZU7vujZxZT81WsZkBMo2BA5cbPYdEhVDAgZrJiQBOOn8O0CwusGBAdVQuo4FXCNdX+gdUCemjyl4nJl3fdcgHRl4CICIhIqYAeXmCWuMJ4uMhS19GlAmI+AiIiICICIiIgIgIistBf52AEE4iIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiIz+z1ZKfQdqUkO/DWcCEREQEQERGRqQC6BbDD2NJhARAREREJGNA/p8P/UblDM/dvKhVrRxQNxhXEBuwW407mSaQEQERERARAREREBEBERkUEDu4W836JSaQER2Deh45+GuZ+3xOFu+m7FrQNxEQEQERGREQG7BGhlxYk0gIgIiIiAiAiIiICLdA3IL1lT302sCEREQEQERERARAREREJG+AbmH76DvSTaBiAiIyJYB3fuB6MOuH4veMiDuIyAiHQNyC9ZNx1NtAhEREBEBEREQEQERERARBoH5B5+uMZbYAIRef36eGv48CbQDFq+u2ICEREQEQERaRmQC6BJtNwIE4iIgIgIiEjj3wOxOhOIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIiIgIgIiIiAiAiIiICICIjIH5zcpHX7Q1hjAAAAAElFTkSuQmCC">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#EEF2E5;
+    --bg:#FFF8F0;
     --card:#FFFFFF;
-    --ink:#1E3324;
-    --ink-soft:#4B5F49;
-    --line: rgba(30,51,36,0.15);
-    --accent:#E3A73A;
-    --accent-ink:#3A2A08;
-    --good:#2F6B3C;
-    --good-bg:#E4F0E1;
-    --warn:#C1443B;
-    --warn-bg:#FBE7E4;
-    --radius-card: 18px;
+    --ink:#241C15;
+    --ink-soft:#8A7A6C;
+    --line: rgba(36,28,21,0.12);
+    --accent:#FF5A36;
+    --accent-ink:#FFFFFF;
+    --good:#17A653;
+    --good-bg:#E4F8EA;
+    --warn:#E8336B;
+    --warn-bg:#FDE6ED;
+    --yellow:#FFC93C;
+    --radius-card: 22px;
     --radius-pill: 999px;
-    --font-head: 'Fraunces', Georgia, 'Iowan Old Style', serif;
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-head: 'Baloo 2', 'Poppins', -apple-system, sans-serif;
+    --font-body: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
   :root:not([data-theme="light"]) {
     @media (prefers-color-scheme: dark) {
-      --bg:#12190F;
-      --card:#1B2419;
-      --ink:#EDEFE6;
-      --ink-soft:#AEBBA8;
-      --line: rgba(237,239,230,0.14);
-      --accent:#E8B655;
-      --accent-ink:#241A03;
-      --good:#8FD69B;
-      --good-bg:#1E3323;
-      --warn:#F0958C;
-      --warn-bg:#3A211E;
+      --bg:#201810;
+      --card:#2C2118;
+      --ink:#FBEEE1;
+      --ink-soft:#C9B7A6;
+      --line: rgba(251,238,225,0.14);
+      --accent:#FF7A55;
+      --accent-ink:#241005;
+      --good:#3FCB7E;
+      --good-bg:#1D3324;
+      --warn:#FF7096;
+      --warn-bg:#3A1A26;
+      --yellow:#FFD666;
     }
   }
   :root[data-theme="dark"]{
-    --bg:#12190F;
-    --card:#1B2419;
-    --ink:#EDEFE6;
-    --ink-soft:#AEBBA8;
-    --line: rgba(237,239,230,0.14);
-    --accent:#E8B655;
-    --accent-ink:#241A03;
-    --good:#8FD69B;
-    --good-bg:#1E3323;
-    --warn:#F0958C;
-    --warn-bg:#3A211E;
+    --bg:#201810;
+    --card:#2C2118;
+    --ink:#FBEEE1;
+    --ink-soft:#C9B7A6;
+    --line: rgba(251,238,225,0.14);
+    --accent:#FF7A55;
+    --accent-ink:#241005;
+    --good:#3FCB7E;
+    --good-bg:#1D3324;
+    --warn:#FF7096;
+    --warn-bg:#3A1A26;
+    --yellow:#FFD666;
   }
 
   *{box-sizing:border-box;}
@@ -117,7 +126,7 @@
     background:var(--card);
     border:1px solid var(--line);
     color:var(--ink);
-    border-radius:10px;
+    border-radius:14px;
     padding:10px 12px;
   }
   input[name=itemName]{flex:1 1 150px; min-width:0;}
@@ -126,7 +135,7 @@
     background:var(--card);
     border:1px solid var(--line);
     color:var(--ink);
-    border-radius:10px;
+    border-radius:14px;
     padding:10px 10px;
   }
   select.unit{width:98px;}
@@ -134,8 +143,8 @@
   button{
     cursor:pointer;
     border:none;
-    border-radius:10px;
-    padding:10px 14px;
+    border-radius:14px;
+    padding:10px 16px;
     font-weight:600;
   }
   button:focus-visible, input:focus-visible, select:focus-visible, details summary:focus-visible{
@@ -143,20 +152,20 @@
     outline-offset:2px;
   }
   .btn-primary{
-    background:var(--ink);
-    color:var(--bg);
+    background:var(--accent);
+    color:var(--accent-ink);
   }
   .btn-primary:hover{opacity:0.92;}
   .btn-ghost{
     background:transparent;
     color:var(--ink-soft);
-    border:1px solid var(--line);
+    border:1.5px solid var(--line);
   }
   .btn-ghost:hover{border-color:var(--ink-soft);}
   .btn-small{
-    padding:6px 10px;
+    padding:7px 12px;
     font-size:0.84rem;
-    border-radius:8px;
+    border-radius:var(--radius-pill);
   }
 
   ul.items{list-style:none; margin:0; padding:0;}
@@ -422,7 +431,7 @@
     </div>
   </section>
 
-  <footer>Hecho por SMSI · Servicio de Mantención y Soluciones Informáticas</footer>
+  <footer>Hecho por <a href="https://smsi-web.vercel.app/" style="color:inherit;">SMSI</a> · Servicio de Mantención y Soluciones Informáticas</footer>
 </div>
 
 <script>
@@ -513,7 +522,8 @@
     list: safeGet(LS_LIST, []),
     prices: safeGet(LS_PRICES, {}),
     history: safeGet(LS_HISTORY, []),
-    autoTop3: {}
+    autoTop3: {},
+    autoLoading: {}
   };
 
   var listEl = document.getElementById("listItems");
@@ -539,6 +549,22 @@
       }
     });
     return best ? {market: best, price: p[best].price} : null;
+  }
+
+  function actualizarPreciosAutomaticos(item){
+    var key = normalize(item.name);
+    state.autoLoading[key] = true;
+    renderList();
+    return fetchPreciosAutomaticos(item.name).then(function(resultado){
+      if(Object.keys(resultado.porSupermercado).length > 0){
+        state.prices[key] = Object.assign({}, state.prices[key], resultado.porSupermercado);
+        persistPrices();
+      }
+      state.autoTop3[key] = resultado.top3;
+      delete state.autoLoading[key];
+      renderList();
+      renderCompare();
+    });
   }
 
   function renderList(){
@@ -597,30 +623,21 @@
       row.appendChild(del);
       li.appendChild(row);
 
+      var autoKey = normalize(item.name);
+      var buscandoAhora = !!state.autoLoading[autoKey];
+
       var autoBtn = document.createElement("button");
       autoBtn.type = "button";
       autoBtn.className = "btn-ghost btn-small";
       autoBtn.style.marginTop = "8px";
-      autoBtn.textContent = "Buscar precios automáticos";
+      autoBtn.disabled = buscandoAhora;
+      autoBtn.textContent = buscandoAhora ? "Buscando precios…" : "Buscar precios automáticos";
       autoBtn.addEventListener("click", function(){
-        autoBtn.disabled = true;
-        autoBtn.textContent = "Buscando...";
-        fetchPreciosAutomaticos(item.name).then(function(resultado){
-          var key = normalize(item.name);
-          if(Object.keys(resultado.porSupermercado).length > 0){
-            state.prices[key] = Object.assign({}, state.prices[key], resultado.porSupermercado);
-            persistPrices();
-          }
-          state.autoTop3[key] = resultado.top3;
-          autoBtn.disabled = false;
-          autoBtn.textContent = "Buscar precios automáticos";
-          renderList();
-          renderCompare();
-        });
+        actualizarPreciosAutomaticos(item);
       });
       li.appendChild(autoBtn);
 
-      var top3Encontrado = state.autoTop3[normalize(item.name)];
+      var top3Encontrado = state.autoTop3[autoKey];
       if(top3Encontrado && top3Encontrado.length > 0){
         var top3Panel = document.createElement("div");
         top3Panel.className = "top3-panel";
@@ -793,13 +810,15 @@
     if(!name) return;
     var qty = parseFloat(fd.get("itemQty")) || 1;
     var unit = fd.get("itemUnit");
-    state.list.push({id: uid(), name: name, qty: qty, unit: unit, done: false});
+    var nuevoItem = {id: uid(), name: name, qty: qty, unit: unit, done: false};
+    state.list.push(nuevoItem);
     persistList();
     e.target.reset();
     e.target.querySelector("[name=itemQty]").value = "1";
     renderList();
     renderCompare();
     e.target.querySelector("[name=itemName]").focus();
+    actualizarPreciosAutomaticos(nuevoItem);
   });
 
   document.getElementById("btnClear").addEventListener("click", function(){
@@ -858,3 +877,4 @@
 </script>
 </body>
 </html>
+
