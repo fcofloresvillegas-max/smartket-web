@@ -200,6 +200,37 @@
   }
   .item-del:hover{color:var(--warn);}
 
+  .top3-panel{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 12px;
+    margin-top:8px;
+  }
+  .top3-titulo{
+    font-size:0.78rem;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .top3-fila{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:4px 0;
+    font-size:0.84rem;
+  }
+  .top3-nombre{
+    color:var(--ink);
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .top3-precio{
+    color:var(--ink-soft);
+    white-space:nowrap;
+    flex:0 0 auto;
+  }
+
   .price-chips{
     display:flex;
     flex-wrap:wrap;
@@ -412,7 +443,7 @@
   async function fetchPreciosAutomaticos(nombreItem){
     var termino = normalize(nombreItem);
     var url = SUPABASE_URL + "/rest/v1/precios_ultimos"
-      + "?select=precio_actual,nombre,supermercados(nombre)"
+      + "?select=precio_actual,precio_unitario,unidad,nombre,supermercados(nombre)"
       + "&termino_busqueda=ilike." + encodeURIComponent("*" + termino + "*")
       + "&order=precio_actual.asc"
       + "&limit=200";
@@ -423,7 +454,7 @@
           "Authorization": "Bearer " + SUPABASE_ANON_KEY
         }
       });
-      if(!res.ok) return {};
+      if(!res.ok) return {porSupermercado: {}, top3: []};
       var rows = await res.json();
       var porSupermercado = {};
       rows.forEach(function(row){
@@ -433,9 +464,18 @@
           porSupermercado[market] = {price: row.precio_actual, date: new Date().toISOString(), auto: true};
         }
       });
-      return porSupermercado;
+      var top3 = rows.slice(0, 3).map(function(row){
+        return {
+          nombre: row.nombre,
+          precio: row.precio_actual,
+          precioUnitario: row.precio_unitario,
+          unidad: row.unidad,
+          mercado: row.supermercados && row.supermercados.nombre
+        };
+      });
+      return {porSupermercado: porSupermercado, top3: top3};
     }catch(e){
-      return {};
+      return {porSupermercado: {}, top3: []};
     }
   }
 
@@ -472,7 +512,8 @@
   var state = {
     list: safeGet(LS_LIST, []),
     prices: safeGet(LS_PRICES, {}),
-    history: safeGet(LS_HISTORY, [])
+    history: safeGet(LS_HISTORY, []),
+    autoTop3: {}
   };
 
   var listEl = document.getElementById("listItems");
@@ -564,12 +605,13 @@
       autoBtn.addEventListener("click", function(){
         autoBtn.disabled = true;
         autoBtn.textContent = "Buscando...";
-        fetchPreciosAutomaticos(item.name).then(function(encontrados){
+        fetchPreciosAutomaticos(item.name).then(function(resultado){
           var key = normalize(item.name);
-          if(Object.keys(encontrados).length > 0){
-            state.prices[key] = Object.assign({}, state.prices[key], encontrados);
+          if(Object.keys(resultado.porSupermercado).length > 0){
+            state.prices[key] = Object.assign({}, state.prices[key], resultado.porSupermercado);
             persistPrices();
           }
+          state.autoTop3[key] = resultado.top3;
           autoBtn.disabled = false;
           autoBtn.textContent = "Buscar precios automáticos";
           renderList();
@@ -577,6 +619,30 @@
         });
       });
       li.appendChild(autoBtn);
+
+      var top3Encontrado = state.autoTop3[normalize(item.name)];
+      if(top3Encontrado && top3Encontrado.length > 0){
+        var top3Panel = document.createElement("div");
+        top3Panel.className = "top3-panel";
+        var top3Titulo = document.createElement("div");
+        top3Titulo.className = "top3-titulo";
+        top3Titulo.textContent = "Las " + top3Encontrado.length + " más baratas encontradas:";
+        top3Panel.appendChild(top3Titulo);
+        top3Encontrado.forEach(function(op, idx){
+          var fila = document.createElement("div");
+          fila.className = "top3-fila";
+          var izq = document.createElement("div");
+          izq.className = "top3-nombre";
+          izq.textContent = (idx + 1) + ". " + op.nombre + (op.mercado ? " — " + op.mercado : "");
+          var der = document.createElement("div");
+          der.className = "top3-precio";
+          der.textContent = fmtMoney(op.precio) + (op.precioUnitario ? " (" + fmtMoney(op.precioUnitario) + (op.unidad && op.unidad.toLowerCase().indexOf("kg") !== -1 ? "/kg" : " x un") + ")" : "");
+          fila.appendChild(izq);
+          fila.appendChild(der);
+          top3Panel.appendChild(fila);
+        });
+        li.appendChild(top3Panel);
+      }
 
       // price chips
       var chipsWrap = document.createElement("div");
