@@ -395,6 +395,7 @@
         <option value="kg">kg</option>
         <option value="g">gramos</option>
         <option value="L">litro</option>
+        <option value="ml">mililitro</option>
         <option value="paquete">paquete</option>
       </select>
       <button type="submit" class="btn-primary">Agregar</button>
@@ -459,12 +460,29 @@
     return unidad.charAt(0) === "k" ? valor * 1000 : valor;
   }
 
+  function parseMlDesdeNombre(nombre){
+    if(!nombre) return null;
+    var match = nombre.match(/(\d+(?:[.,]\d+)?)\s*(lt|l|litros?|ml|cc)\b/i);
+    if(!match) return null;
+    var valor = parseFloat(match[1].replace(",", "."));
+    var unidad = match[2].toLowerCase();
+    return (unidad === "ml" || unidad === "cc") ? valor : valor * 1000;
+  }
+
+  // Unidades donde tiene sentido comparar por precio unitario (normalizado
+  // por kg o por litro) en vez de por precio total del paquete: son las
+  // que la persona elige cuando piensa "a granel" (una bolsa de arroz, un
+  // bidon de aceite), a diferencia de "un", "g" o "ml" donde quiere ese
+  // tamaño puntual y le importa el precio del paquete tal cual.
+  var UNIDADES_A_GRANEL = ["kg", "L"];
+
   async function fetchPreciosAutomaticos(nombreItem, unidadItem){
     var termino = normalize(nombreItem);
+    var compararPorUnitario = UNIDADES_A_GRANEL.indexOf(unidadItem) !== -1;
     var url = SUPABASE_URL + "/rest/v1/precios_ultimos"
       + "?select=precio_actual,precio_unitario,unidad,nombre,supermercados(nombre)"
       + "&termino_busqueda=ilike." + encodeURIComponent("*" + termino + "*")
-      + "&order=precio_actual.asc"
+      + "&order=" + (compararPorUnitario ? "precio_unitario.asc.nullslast" : "precio_actual.asc")
       + "&limit=200";
     try{
       var res = await fetch(url, {
@@ -496,30 +514,57 @@
         }
       }catch(e){ /* si falla, seguimos sin filtrar por reglas */ }
 
-      // Si la persona pidio el producto "por kg" (bolsas grandes: arroz,
-      // harina, carne, etc.), dejamos afuera los sobres/porciones chicas
-      // (menos de 450 g) tipo "arroz preparado chaufan 210 g" que no son
-      // una comparacion justa. Si eso deja la lista vacia, no filtramos
-      // (mejor mostrar algo que nada).
+      // Si la persona pidio el producto "por kg" o "por litro" (bolsas o
+      // bidones grandes: arroz, aceite, leche, etc.), dejamos afuera los
+      // sobres/porciones chicas que no son una comparacion justa. Si eso
+      // deja la lista vacia, no filtramos (mejor mostrar algo que nada).
       if(unidadItem === "kg"){
         var soloGrandes = rows.filter(function(row){
           var gramos = parseGramosDesdeNombre(row.nombre);
           return gramos === null || gramos >= 450;
         });
-        if(soloGrandes.length > 0){
-          rows = soloGrandes;
+        if(soloGrandes.length > 0){ rows = soloGrandes; }
+      } else if(unidadItem === "L"){
+        var soloGrandesL = rows.filter(function(row){
+          var ml = parseMlDesdeNombre(row.nombre);
+          return ml === null || ml >= 700;
+        });
+        if(soloGrandesL.length > 0){ rows = soloGrandesL; }
+      }
+
+      // Con que valor se compara: precio por kg/litro si eligieron "granel",
+      // o precio del paquete tal cual si eligieron un, g o ml.
+      function valorComparable(row){
+        if(compararPorUnitario){
+          return row.precio_unitario != null ? row.precio_unitario : row.precio_actual;
         }
+        return row.precio_actual;
       }
 
       var porSupermercado = {};
       rows.forEach(function(row){
         var market = row.supermercados && row.supermercados.nombre;
-        if(!market || row.precio_actual == null) return;
-        if(!porSupermercado[market] || row.precio_actual < porSupermercado[market].price){
-          porSupermercado[market] = {price: row.precio_actual, date: new Date().toISOString(), auto: true};
+        var valor = valorComparable(row);
+        if(!market || valor == null) return;
+        if(!porSupermercado[market] || valor < porSupermercado[market].price){
+          // Si comparamos "por kg/litro", ese es tambien el precio que hay
+          // que usar en el total (porque en la lista pusieron "1 kg", no
+          // "1 paquete"). Si no, se usa el precio del paquete tal cual.
+          porSupermercado[market] = {
+            price: valor,
+            date: new Date().toISOString(),
+            auto: true
+          };
         }
       });
-      var top3 = rows.slice(0, 3).map(function(row){
+
+      var top3Fuente = rows.slice().sort(function(a, b){
+        var va = valorComparable(a), vb = valorComparable(b);
+        if(va == null) return 1;
+        if(vb == null) return -1;
+        return va - vb;
+      });
+      var top3 = top3Fuente.slice(0, 3).map(function(row){
         return {
           nombre: row.nombre,
           precio: row.precio_actual,
@@ -743,7 +788,11 @@
           izq.textContent = (idx + 1) + ". " + op.nombre + (op.mercado ? " — " + op.mercado : "");
           var der = document.createElement("div");
           der.className = "top3-precio";
-          der.textContent = fmtMoney(op.precio) + (op.precioUnitario ? " (" + fmtMoney(op.precioUnitario) + (op.unidad && op.unidad.toLowerCase().indexOf("kg") !== -1 ? "/kg" : " x un") + ")" : "");
+          var etiquetaUnidad = " x un";
+          var unidadLower = (op.unidad || "").toLowerCase();
+          if(unidadLower.indexOf("kg") !== -1){ etiquetaUnidad = "/kg"; }
+          else if(/\b(l|lt|litro)\b/.test(unidadLower)){ etiquetaUnidad = "/L"; }
+          der.textContent = fmtMoney(op.precio) + (op.precioUnitario ? " (" + fmtMoney(op.precioUnitario) + etiquetaUnidad + ")" : "");
           fila.appendChild(izq);
           fila.appendChild(der);
           top3Panel.appendChild(fila);
@@ -815,7 +864,7 @@
   }
 
   function unitLabel(u){
-    var map = {un:"unidad", kg:"kg", g:"g", L:"L", paquete:"paquete"};
+    var map = {un:"unidad", kg:"kg", g:"g", L:"L", ml:"mL", paquete:"paquete"};
     return map[u] || u;
   }
 
@@ -988,5 +1037,3 @@
 </script>
 </body>
 </html>
-
-
