@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smartket — Panel admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF8F0; --card:#FFFFFF; --ink:#241C15; --ink-soft:#8A7A6C;
+    --line: rgba(36,28,21,0.12); --accent:#FF5A36; --accent-ink:#FFFFFF;
+    --good:#17A653; --good-bg:#E4F8EA; --warn:#E8336B; --warn-bg:#FDE6ED;
+    --font-head:'Baloo 2','Poppins',sans-serif;
+    --font-body:'Poppins',-apple-system,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#201810; --card:#2C2118; --ink:#FBEEE1; --ink-soft:#C9B7A6;
+      --line: rgba(251,238,225,0.14); --accent:#FF7A55; --accent-ink:#241005;
+      --good:#3FCB7E; --good-bg:#1D3324; --warn:#FF7096; --warn-bg:#3A1A26;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);}
+  .page{max-width:760px;margin:0 auto;padding:26px 18px 60px;}
+  h1{font-family:var(--font-head);font-size:1.5rem;margin:0 0 4px;}
+  h2{font-family:var(--font-head);font-size:1.15rem;margin:26px 0 10px;}
+  p{color:var(--ink-soft);font-size:0.92rem;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;}
+  label{display:block;font-size:0.82rem;color:var(--ink-soft);margin-bottom:4px;}
+  input, select{
+    width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);
+    border-radius:12px;padding:9px 11px;font-family:var(--font-body);font-size:0.92rem;margin-bottom:10px;
+  }
+  button{
+    cursor:pointer;border:none;border-radius:12px;padding:9px 14px;font-weight:600;
+    font-family:var(--font-body);font-size:0.88rem;
+  }
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-danger{background:var(--warn-bg);color:var(--warn);}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink-soft);}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
+  .row > div{flex:1 1 140px;}
+  table{width:100%;border-collapse:collapse;font-size:0.86rem;}
+  th, td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);}
+  th{color:var(--ink-soft);font-weight:600;font-size:0.78rem;}
+  .estado{font-size:0.84rem;margin-top:6px;}
+  .estado.ok{color:var(--good);}
+  .estado.error{color:var(--warn);}
+  .oculto{display:none;}
+  .muted{color:var(--ink-soft);font-size:0.8rem;}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>🛒 Smartket — Panel admin</h1>
+  <p>Acá puedes revisar lo que junta el scraper cada noche, borrar productos mal clasificados y crear reglas para que no vuelvan a aparecer.</p>
+
+  <div class="card" id="loginCard">
+    <label for="claveInput">Contraseña de administrador</label>
+    <input type="password" id="claveInput" placeholder="••••••••••••">
+    <button class="btn-primary" id="btnEntrar">Entrar</button>
+    <div class="estado" id="loginEstado"></div>
+  </div>
+
+  <div id="panelAdmin" class="oculto">
+
+    <h2>Revisar productos por término</h2>
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="terminoInput">Término de búsqueda</label>
+          <input type="text" id="terminoInput" placeholder="ej: arroz">
+        </div>
+        <div style="flex:0 0 auto;">
+          <button class="btn-primary" id="btnBuscar">Ver productos</button>
+        </div>
+      </div>
+      <table id="tablaProductos">
+        <thead><tr><th>Nombre</th><th>Precio</th><th>$/kg</th><th>Fecha</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted" id="sinResultados">Busca un término para ver los productos guardados.</p>
+    </div>
+
+    <h2>Agregar regla de exclusión</h2>
+    <div class="card">
+      <p>Los productos que contengan ese texto en el nombre no se mostrarán en Smartket para ese término, aunque el scraper los siga guardando.</p>
+      <div class="row">
+        <div>
+          <label for="reglaTermino">Término (ej: arroz)</label>
+          <input type="text" id="reglaTermino">
+        </div>
+        <div>
+          <label for="reglaContiene">Excluir si el nombre contiene</label>
+          <input type="text" id="reglaContiene" placeholder="ej: postre">
+        </div>
+        <div style="flex:0 0 auto;">
+          <button class="btn-primary" id="btnAgregarRegla">Agregar regla</button>
+        </div>
+      </div>
+      <div class="estado" id="reglaEstado"></div>
+    </div>
+
+    <h2>Reglas activas</h2>
+    <div class="card">
+      <table id="tablaReglas">
+        <thead><tr><th>Término</th><th>Excluye si contiene</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h2>Cambiar contraseña</h2>
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="claveNueva">Nueva contraseña</label>
+          <input type="password" id="claveNueva">
+        </div>
+        <div style="flex:0 0 auto;">
+          <button class="btn-primary" id="btnCambiarClave">Cambiar</button>
+        </div>
+      </div>
+      <div class="estado" id="claveEstado"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var SUPABASE_URL = "https://zvbkcrzluztuuwvkquny.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2YmtjcnpsdXp0dXV3dmtxdW55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2NzgzMzYsImV4cCI6MjEwNTI1NDMzNn0.7MWoLOghCwDdeeHLuYGny1a7OJg2wmknxp6UBVqu2Ro";
+  var clave = null; // solo en memoria de esta pestaña, nunca se guarda
+
+  function headers(){
+    return {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+      "Content-Type": "application/json"
+    };
+  }
+
+  async function rpc(nombreFn, body){
+    var res = await fetch(SUPABASE_URL + "/rest/v1/rpc/" + nombreFn, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify(body)
+    });
+    var data = null;
+    try{ data = await res.json(); }catch(e){}
+    if(!res.ok){
+      var msg = (data && data.message) || "Error desconocido";
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  document.getElementById("btnEntrar").addEventListener("click", async function(){
+    var intento = document.getElementById("claveInput").value;
+    var estado = document.getElementById("loginEstado");
+    estado.textContent = "Verificando...";
+    estado.className = "estado";
+    try{
+      var ok = await rpc("admin_verificar_clave", {clave: intento});
+      if(ok === true){
+        clave = intento;
+        document.getElementById("loginCard").classList.add("oculto");
+        document.getElementById("panelAdmin").classList.remove("oculto");
+        cargarReglas();
+      } else {
+        estado.textContent = "Contraseña incorrecta.";
+        estado.className = "estado error";
+      }
+    }catch(e){
+      estado.textContent = "Error: " + e.message;
+      estado.className = "estado error";
+    }
+  });
+
+  async function buscarProductos(){
+    var termino = document.getElementById("terminoInput").value.trim();
+    var tbody = document.querySelector("#tablaProductos tbody");
+    var sinResultados = document.getElementById("sinResultados");
+    tbody.innerHTML = "";
+    if(!termino){ return; }
+    var url = SUPABASE_URL + "/rest/v1/precios_productos"
+      + "?select=id,nombre,precio_actual,precio_unitario,fecha_consulta"
+      + "&termino_busqueda=eq." + encodeURIComponent(termino)
+      + "&order=fecha_consulta.desc&limit=100";
+    var res = await fetch(url, {headers: headers()});
+    var filas = await res.json();
+    sinResultados.style.display = filas.length ? "none" : "block";
+    filas.forEach(function(f){
+      var tr = document.createElement("tr");
+      var fecha = new Date(f.fecha_consulta).toLocaleString("es-CL", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"});
+      tr.innerHTML =
+        "<td>" + f.nombre + "</td>" +
+        "<td>$" + (f.precio_actual != null ? f.precio_actual.toLocaleString("es-CL") : "-") + "</td>" +
+        "<td>" + (f.precio_unitario != null ? "$" + f.precio_unitario.toLocaleString("es-CL") : "-") + "</td>" +
+        "<td>" + fecha + "</td>" +
+        "<td></td>";
+      var btnBorrar = document.createElement("button");
+      btnBorrar.className = "btn-danger";
+      btnBorrar.textContent = "Eliminar";
+      btnBorrar.addEventListener("click", async function(){
+        if(!confirm("¿Eliminar este producto de la base de datos?")) return;
+        try{
+          await rpc("admin_eliminar_producto", {clave: clave, p_id: f.id});
+          buscarProductos();
+        }catch(e){ alert("Error: " + e.message); }
+      });
+      tr.lastElementChild.appendChild(btnBorrar);
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById("btnBuscar").addEventListener("click", buscarProductos);
+
+  document.getElementById("btnAgregarRegla").addEventListener("click", async function(){
+    var termino = document.getElementById("reglaTermino").value.trim();
+    var contiene = document.getElementById("reglaContiene").value.trim();
+    var estado = document.getElementById("reglaEstado");
+    if(!termino || !contiene){
+      estado.textContent = "Completa ambos campos.";
+      estado.className = "estado error";
+      return;
+    }
+    try{
+      await rpc("admin_agregar_regla", {clave: clave, p_termino: termino, p_contiene: contiene});
+      estado.textContent = "Regla agregada.";
+      estado.className = "estado ok";
+      document.getElementById("reglaTermino").value = "";
+      document.getElementById("reglaContiene").value = "";
+      cargarReglas();
+    }catch(e){
+      estado.textContent = "Error: " + e.message;
+      estado.className = "estado error";
+    }
+  });
+
+  async function cargarReglas(){
+    var tbody = document.querySelector("#tablaReglas tbody");
+    tbody.innerHTML = "";
+    var url = SUPABASE_URL + "/rest/v1/reglas_exclusion?select=id,termino_busqueda,contiene_excluir&order=creado_en.desc";
+    var res = await fetch(url, {headers: headers()});
+    var filas = await res.json();
+    filas.forEach(function(f){
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + f.termino_busqueda + "</td><td>" + f.contiene_excluir + "</td><td></td>";
+      var btnBorrar = document.createElement("button");
+      btnBorrar.className = "btn-ghost";
+      btnBorrar.textContent = "Quitar";
+      btnBorrar.addEventListener("click", async function(){
+        try{
+          await rpc("admin_eliminar_regla", {clave: clave, p_id: f.id});
+          cargarReglas();
+        }catch(e){ alert("Error: " + e.message); }
+      });
+      tr.lastElementChild.appendChild(btnBorrar);
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById("btnCambiarClave").addEventListener("click", async function(){
+    var nueva = document.getElementById("claveNueva").value;
+    var estado = document.getElementById("claveEstado");
+    if(!nueva || nueva.length < 8){
+      estado.textContent = "Usa al menos 8 caracteres.";
+      estado.className = "estado error";
+      return;
+    }
+    try{
+      await rpc("admin_cambiar_clave", {clave_actual: clave, clave_nueva: nueva});
+      clave = nueva;
+      estado.textContent = "Contraseña actualizada.";
+      estado.className = "estado ok";
+      document.getElementById("claveNueva").value = "";
+    }catch(e){
+      estado.textContent = "Error: " + e.message;
+      estado.className = "estado error";
+    }
+  });
+})();
+</script>
+</body>
+</html>
