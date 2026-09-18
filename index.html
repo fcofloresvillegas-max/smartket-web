@@ -387,7 +387,8 @@
   <section class="block block-list">
     <h2>Tu lista de esta semana</h2>
     <form class="add-row" id="addForm">
-      <input type="text" name="itemName" placeholder="Ej: arroz, leche, detergente" required>
+      <input type="text" name="itemName" placeholder="Ej: arroz, leche, detergente" list="sugerenciasProductos" autocomplete="off" required>
+      <datalist id="sugerenciasProductos"></datalist>
       <input type="number" name="itemQty" placeholder="1" min="0" step="0.1" value="1">
       <select class="unit" name="itemUnit">
         <option value="un">unidad</option>
@@ -475,6 +476,26 @@
       if(!res.ok) return {porSupermercado: {}, top3: []};
       var rows = await res.json();
 
+      // Reglas de exclusion cargadas desde el panel admin: si el nombre
+      // contiene el texto marcado para este termino, se descarta.
+      try{
+        var urlReglas = SUPABASE_URL + "/rest/v1/reglas_exclusion"
+          + "?select=contiene_excluir"
+          + "&termino_busqueda=eq." + encodeURIComponent(termino);
+        var resReglas = await fetch(urlReglas, {
+          headers: {"apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY}
+        });
+        if(resReglas.ok){
+          var reglas = await resReglas.json();
+          if(reglas.length > 0){
+            rows = rows.filter(function(row){
+              var nombreLower = (row.nombre || "").toLowerCase();
+              return !reglas.some(function(r){ return nombreLower.indexOf(r.contiene_excluir) !== -1; });
+            });
+          }
+        }
+      }catch(e){ /* si falla, seguimos sin filtrar por reglas */ }
+
       // Si la persona pidio el producto "por kg" (bolsas grandes: arroz,
       // harina, carne, etc.), dejamos afuera los sobres/porciones chicas
       // (menos de 450 g) tipo "arroz preparado chaufan 210 g" que no son
@@ -536,6 +557,50 @@
   function normalize(name){
     return name.trim().toLowerCase();
   }
+  function sinTildes(s){
+    return s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  // Productos de la canasta basica que el scraper rastrea, con la unidad en
+  // que normalmente se venden. Se usa para autocompletar y para preseleccionar
+  // la unidad correcta (evita comparar "arroz por kg" contra bolsitas chicas).
+  var SUGERENCIAS_PRODUCTOS = [
+    {termino:"arroz", unidad:"kg"}, {termino:"pan hallulla", unidad:"kg"},
+    {termino:"fideos espiral", unidad:"un"}, {termino:"galletas dulces", unidad:"un"},
+    {termino:"galletas de agua", unidad:"un"}, {termino:"torta cumpleaños", unidad:"un"},
+    {termino:"prepizza familiar", unidad:"un"}, {termino:"harina de trigo", unidad:"kg"},
+    {termino:"avena", unidad:"kg"}, {termino:"asiento vacuno", unidad:"kg"},
+    {termino:"carne molida", unidad:"kg"}, {termino:"chuleta de cerdo", unidad:"kg"},
+    {termino:"costillar de cerdo", unidad:"kg"}, {termino:"pulpa de cerdo", unidad:"kg"},
+    {termino:"pavo molido", unidad:"kg"}, {termino:"pechuga de pollo", unidad:"kg"},
+    {termino:"pollo entero", unidad:"kg"}, {termino:"trutro pollo", unidad:"kg"},
+    {termino:"pulpa de cordero", unidad:"kg"}, {termino:"vienesas de ave", unidad:"un"},
+    {termino:"vienesas", unidad:"un"}, {termino:"longaniza", unidad:"kg"},
+    {termino:"jamón de cerdo", unidad:"kg"}, {termino:"paté", unidad:"un"},
+    {termino:"merluza", unidad:"kg"}, {termino:"choritos", unidad:"kg"},
+    {termino:"jurel en conserva", unidad:"un"}, {termino:"conserva surtido", unidad:"un"},
+    {termino:"leche entera", unidad:"L"}, {termino:"leche en polvo", unidad:"un"},
+    {termino:"yogurt", unidad:"un"}, {termino:"queso gouda", unidad:"kg"},
+    {termino:"quesillo", unidad:"kg"}, {termino:"queso crema", unidad:"un"},
+    {termino:"huevos", unidad:"un"}, {termino:"mantequilla con sal", unidad:"un"},
+    {termino:"margarina", unidad:"un"}, {termino:"aceite vegetal", unidad:"L"},
+    {termino:"plátano", unidad:"kg"}, {termino:"manzana", unidad:"kg"},
+    {termino:"maní salado", unidad:"kg"}, {termino:"porotos", unidad:"kg"},
+    {termino:"lentejas", unidad:"kg"}, {termino:"lechuga", unidad:"un"},
+    {termino:"zapallo", unidad:"kg"}, {termino:"limón", unidad:"kg"},
+    {termino:"palta", unidad:"kg"}, {termino:"tomate", unidad:"kg"},
+    {termino:"zanahoria", unidad:"kg"}, {termino:"cebolla", unidad:"kg"},
+    {termino:"choclo congelado", unidad:"kg"}, {termino:"papas", unidad:"kg"},
+    {termino:"azúcar", unidad:"kg"}, {termino:"chocolate", unidad:"kg"},
+    {termino:"caramelos", unidad:"un"}, {termino:"helado familiar", unidad:"un"},
+    {termino:"salsa de tomate", unidad:"un"}, {termino:"café instantáneo", unidad:"un"},
+    {termino:"té", unidad:"un"}, {termino:"agua mineral", unidad:"L"},
+    {termino:"bebida gaseosa", unidad:"L"}, {termino:"bebida energética", unidad:"L"},
+    {termino:"bebida isotónica", unidad:"L"}, {termino:"jugo", unidad:"L"},
+    {termino:"néctar", unidad:"L"}, {termino:"jugo en polvo", unidad:"un"},
+    {termino:"papas fritas", unidad:"un"}
+  ];
+
   function uid(){
     return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
   }
@@ -894,6 +959,27 @@
       });
     }
     panel.hidden = false;
+  });
+
+  // Llena las sugerencias del buscador y, si lo que se escribe calza con un
+  // producto conocido, preselecciona la unidad correcta (kg, L, un) sola.
+  var datalistProductos = document.getElementById("sugerenciasProductos");
+  SUGERENCIAS_PRODUCTOS.forEach(function(p){
+    var opt = document.createElement("option");
+    opt.value = p.termino;
+    datalistProductos.appendChild(opt);
+  });
+
+  var inputNombre = document.querySelector('input[name="itemName"]');
+  var selectUnidad = document.querySelector('select[name="itemUnit"]');
+  inputNombre.addEventListener("input", function(){
+    var escrito = sinTildes(normalize(inputNombre.value));
+    var match = SUGERENCIAS_PRODUCTOS.find(function(p){
+      return sinTildes(p.termino) === escrito;
+    });
+    if(match){
+      selectUnidad.value = match.unidad;
+    }
   });
 
   renderList();
