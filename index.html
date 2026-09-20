@@ -423,15 +423,9 @@
     <h2>Sobre Smartket</h2>
     <p>Smartket es un proyecto gratuito de SMSI. No tiene publicidad, no vende tus datos y no necesitas crear ninguna cuenta: toda la información se guarda solo en tu teléfono o computador.</p>
     <div class="support-card">
-      <p style="margin-bottom:4px;">Si Smartket te sirvió y quieres ayudar a que siga gratis para más gente, puedes aportar lo que quieras vía transferencia.</p>
-      <button type="button" class="btn-ghost btn-small" id="btnMostrarAporte" style="margin-top:6px;">Mostrar datos para aportar</button>
-      <dl id="donDatos" style="display:none; margin-top:14px;">
-        <dt>Nombre</dt><dd id="donName"></dd>
-        <dt>RUT</dt><dd id="donRut"></dd>
-        <dt>Banco</dt><dd id="donBank"></dd>
-        <dt>Cuenta</dt><dd id="donAccount"></dd>
-      </dl>
-      <p class="fine">Es totalmente voluntario. Smartket funciona igual de bien sin hacer ningún aporte.</p>
+      <p style="margin-bottom:4px;">Si Smartket te sirvió y quieres ayudar a que siga gratis para más gente, puedes aportar lo que quieras.</p>
+      <a href="https://app.soymach.com/rF2V/ii6lpqzw" target="_blank" rel="noopener" class="btn-primary btn-small" style="display:inline-block; text-decoration:none; margin-top:8px;">Aportar por MACH</a>
+      <p class="fine" style="margin-top:8px;">Es totalmente voluntario. Smartket funciona igual de bien sin hacer ningún aporte.</p>
     </div>
   </section>
 
@@ -1032,22 +1026,6 @@
       selectUnidad.value = match.unidad;
     }
   });
-
-  // Datos de aporte: no se escriben como texto plano en la pagina (para no
-  // quedar expuestos a scrapers que solo leen el HTML/texto visible). Se
-  // arman recien cuando la persona pide verlos.
-  var btnAporte = document.getElementById("btnMostrarAporte");
-  if(btnAporte){
-    btnAporte.addEventListener("click", function(){
-      var datos = document.getElementById("donDatos");
-      document.getElementById("donName").textContent = atob("RnJhbmNpc2NvIEZsb3JlcyBWaWxsZWdhcw==");
-      document.getElementById("donRut").textContent = atob("MTYuMzUwLjU0Ni0w");
-      document.getElementById("donBank").textContent = atob("QmFuY29Fc3RhZG8=");
-      document.getElementById("donAccount").textContent = atob("Q3VlbnRhUlVUIC0gTi4gMTYzNTA1NDY=");
-      datos.style.display = "grid";
-      btnAporte.style.display = "none";
-    });
-  }
 
   renderList();
   renderCompare();
