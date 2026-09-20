@@ -491,20 +491,25 @@
       var rows = await res.json();
 
       // Reglas de exclusion cargadas desde el panel admin: si el nombre
-      // contiene el texto marcado para este termino, se descarta.
+      // contiene el texto marcado, se descarta. Una regla creada para "pan"
+      // debe aplicar tambien cuando el producto de la lista es "pan hallulla"
+      // (el termino de la lista CONTIENE el de la regla) - por eso se trae
+      // todo y se compara en el navegador, en vez de pedir una coincidencia
+      // exacta a Supabase.
       try{
-        var urlReglas = SUPABASE_URL + "/rest/v1/reglas_exclusion"
-          + "?select=contiene_excluir"
-          + "&termino_busqueda=eq." + encodeURIComponent(termino);
+        var urlReglas = SUPABASE_URL + "/rest/v1/reglas_exclusion?select=termino_busqueda,contiene_excluir";
         var resReglas = await fetch(urlReglas, {
           headers: {"apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY}
         });
         if(resReglas.ok){
-          var reglas = await resReglas.json();
-          if(reglas.length > 0){
+          var todasLasReglas = await resReglas.json();
+          var reglasAplicables = todasLasReglas.filter(function(r){
+            return termino.indexOf(r.termino_busqueda) !== -1;
+          });
+          if(reglasAplicables.length > 0){
             rows = rows.filter(function(row){
               var nombreLower = (row.nombre || "").toLowerCase();
-              return !reglas.some(function(r){ return nombreLower.indexOf(r.contiene_excluir) !== -1; });
+              return !reglasAplicables.some(function(r){ return nombreLower.indexOf(r.contiene_excluir) !== -1; });
             });
           }
         }
