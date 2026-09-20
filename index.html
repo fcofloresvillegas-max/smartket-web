@@ -200,6 +200,29 @@
   .item-name{font-weight:600; word-break:break-word;}
   .item-name.done{text-decoration:line-through; color:var(--ink-soft); font-weight:500;}
   .item-qty{font-size:0.85rem; color:var(--ink-soft);}
+  .item-qty-edit{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:2px;
+  }
+  .item-qty-input{
+    width:56px;
+    padding:4px 6px;
+    font-size:0.82rem;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--bg);
+    color:var(--ink-soft);
+  }
+  .item-unit-select{
+    padding:4px 6px;
+    font-size:0.82rem;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--bg);
+    color:var(--ink-soft);
+  }
   .item-del{
     background:transparent;
     border:none;
@@ -736,11 +759,45 @@
       var nameEl = document.createElement("div");
       nameEl.className = "item-name" + (item.done ? " done" : "");
       nameEl.textContent = item.name;
-      var qtyEl = document.createElement("div");
-      qtyEl.className = "item-qty";
-      qtyEl.textContent = item.qty + " " + unitLabel(item.unit);
+
+      var qtyEditRow = document.createElement("div");
+      qtyEditRow.className = "item-qty-edit";
+
+      var qtyInput = document.createElement("input");
+      qtyInput.type = "number";
+      qtyInput.min = "0";
+      qtyInput.step = "0.1";
+      qtyInput.value = item.qty;
+      qtyInput.className = "item-qty-input";
+      qtyInput.setAttribute("aria-label", "Cantidad de " + item.name);
+
+      var unitSelect = document.createElement("select");
+      unitSelect.className = "item-unit-select";
+      unitSelect.setAttribute("aria-label", "Unidad de " + item.name);
+      [["un","unidad"],["kg","kg"],["g","gramos"],["L","litro"],["ml","mililitro"],["paquete","paquete"]].forEach(function(opt){
+        var o = document.createElement("option");
+        o.value = opt[0]; o.textContent = opt[1];
+        if(opt[0] === item.unit) o.selected = true;
+        unitSelect.appendChild(o);
+      });
+
+      qtyInput.addEventListener("change", function(){
+        var nuevaQty = parseFloat(qtyInput.value);
+        item.qty = isNaN(nuevaQty) ? item.qty : nuevaQty;
+        persistList();
+        renderCompare();
+      });
+      unitSelect.addEventListener("change", function(){
+        item.unit = unitSelect.value;
+        persistList();
+        actualizarPreciosAutomaticos(item);
+      });
+
+      qtyEditRow.appendChild(qtyInput);
+      qtyEditRow.appendChild(unitSelect);
+
       main.appendChild(nameEl);
-      main.appendChild(qtyEl);
+      main.appendChild(qtyEditRow);
 
       var del = document.createElement("button");
       del.className = "item-del";
