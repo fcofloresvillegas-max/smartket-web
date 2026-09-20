@@ -628,6 +628,14 @@
         }
       });
 
+      // Normaliza texto para que espacios, mayúsculas, tildes o caracteres
+      // invisibles no hagan aparecer el mismo producto varias veces.
+      function claveTexto(valor){
+        return String(valor == null ? "" : valor)
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+      }
+
       var top3Fuente = rows.slice().sort(function(a, b){
         var va = valorComparable(a), vb = valorComparable(b);
         if(va == null) return 1;
@@ -642,7 +650,10 @@
         // Puede haber productos distintos (distinto EAN/variante) que se
         // muestran con el mismo nombre, tienda y precio - para la persona
         // se ven igual, asi que en este panel solo se muestra una vez.
-        var clave = (row.nombre || "") + "|" + mercadoNombre + "|" + row.precio_actual;
+        // Como las filas vienen ordenadas por precio, basta una entrada por
+        // producto y tienda; así no reaparecen registros históricos con otro
+        // precio ni duplicados idénticos.
+        var clave = claveTexto(row.nombre) + "|" + claveTexto(mercadoNombre);
         if(top3VistosClave[clave]) continue;
         top3VistosClave[clave] = true;
         top3.push({
