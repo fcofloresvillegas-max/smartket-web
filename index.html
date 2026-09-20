@@ -634,15 +634,25 @@
         if(vb == null) return -1;
         return va - vb;
       });
-      var top3 = top3Fuente.slice(0, 3).map(function(row){
-        return {
+      var top3VistosClave = {};
+      var top3 = [];
+      for(var i = 0; i < top3Fuente.length && top3.length < 3; i++){
+        var row = top3Fuente[i];
+        var mercadoNombre = row.supermercados && row.supermercados.nombre;
+        // Puede haber productos distintos (distinto EAN/variante) que se
+        // muestran con el mismo nombre, tienda y precio - para la persona
+        // se ven igual, asi que en este panel solo se muestra una vez.
+        var clave = (row.nombre || "") + "|" + mercadoNombre + "|" + row.precio_actual;
+        if(top3VistosClave[clave]) continue;
+        top3VistosClave[clave] = true;
+        top3.push({
           nombre: row.nombre,
           precio: row.precio_actual,
           precioUnitario: row.precio_unitario,
           unidad: row.unidad,
-          mercado: row.supermercados && row.supermercados.nombre
-        };
-      });
+          mercado: mercadoNombre
+        });
+      }
       return {porSupermercado: porSupermercado, top3: top3};
     }catch(e){
       return {porSupermercado: {}, top3: []};
