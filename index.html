@@ -107,6 +107,38 @@
   }
   .hero-sub{font-size:1rem; max-width:38ch;}
 
+  .stores-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));
+    gap:8px;
+    margin-top:12px;
+  }
+  .store-check{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:8px 10px;
+    font-size:0.88rem;
+    cursor:pointer;
+    user-select:none;
+  }
+  .store-check input{
+    width:16px; height:16px;
+    accent-color:var(--accent);
+  }
+  .ubicacion-info{
+    margin-top:10px;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    background:var(--bg);
+    border:1px dashed var(--line);
+    border-radius:10px;
+    padding:8px 10px;
+  }
+
   .block{
     padding:22px 0;
     border-top:1px solid var(--line);
@@ -408,6 +440,14 @@
     <p class="hero-sub">Una herramienta gratuita para que cualquier persona ahorre tiempo y plata al ir al supermercado. Puedes buscar precios automáticamente o anotar los que veas tú mismo — tu lista queda guardada en este mismo dispositivo.</p>
   </header>
 
+  <section class="block block-stores">
+    <h2>Mis supermercados</h2>
+    <p class="hint">Marca los que tengas cerca — el comparador solo va a considerar estos.</p>
+    <button type="button" class="btn-ghost btn-small" id="btnUsarUbicacion">📍 Usar mi ubicación</button>
+    <div id="ubicacionInfo" class="ubicacion-info" hidden></div>
+    <div class="stores-grid" id="storesGrid"></div>
+  </section>
+
   <section class="block block-list">
     <h2>Tu lista de esta semana</h2>
     <form class="add-row" id="addForm">
@@ -513,6 +553,12 @@
       if(!res.ok) return {porSupermercado: {}, top3: []};
       var rows = await res.json();
 
+      // Solo considerar los supermercados que la persona marco como cercanos.
+      rows = rows.filter(function(row){
+        var market = row.supermercados && row.supermercados.nombre;
+        return market && state.tiendasSeleccionadas.indexOf(market) !== -1;
+      });
+
       // Reglas de exclusion cargadas desde el panel admin: si el nombre
       // contiene el texto marcado, se descarta. Una regla creada para "pan"
       // debe aplicar tambien cuando el producto de la lista es "pan hallulla"
@@ -603,7 +649,7 @@
     }
   }
 
-  var SUPERMARKETS = ["Jumbo","Líder","Santa Isabel","Unimarc","Tottus","Ekono","Alvi","Acuenta","OK Market","Mayorista 10"];
+  var SUPERMARKETS = ["Jumbo","Lider","Santa Isabel","A Cuenta","Tottus","Colun","Super 10","Unimarc"];
 
   function safeGet(key, fallback){
     try{
@@ -677,13 +723,77 @@
     return "$" + Math.round(n).toLocaleString("es-CL");
   }
 
+  var LS_TIENDAS = "smarket_tiendas_v1";
+
   var state = {
     list: safeGet(LS_LIST, []),
     prices: safeGet(LS_PRICES, {}),
     history: safeGet(LS_HISTORY, []),
     autoTop3: {},
-    autoLoading: {}
+    autoLoading: {},
+    tiendasSeleccionadas: safeGet(LS_TIENDAS, SUPERMARKETS.slice())
   };
+
+  function persistTiendas(){ safeSet(LS_TIENDAS, state.tiendasSeleccionadas); }
+
+  function renderStoresGrid(){
+    var grid = document.getElementById("storesGrid");
+    grid.innerHTML = "";
+    SUPERMARKETS.forEach(function(nombre){
+      var label = document.createElement("label");
+      label.className = "store-check";
+      var input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = state.tiendasSeleccionadas.indexOf(nombre) !== -1;
+      input.addEventListener("change", function(){
+        if(input.checked){
+          if(state.tiendasSeleccionadas.indexOf(nombre) === -1){
+            state.tiendasSeleccionadas.push(nombre);
+          }
+        } else {
+          state.tiendasSeleccionadas = state.tiendasSeleccionadas.filter(function(n){ return n !== nombre; });
+        }
+        persistTiendas();
+        renderList();
+        renderCompare();
+      });
+      var span = document.createElement("span");
+      span.textContent = nombre;
+      label.appendChild(input);
+      label.appendChild(span);
+      grid.appendChild(label);
+    });
+  }
+
+  document.getElementById("btnUsarUbicacion").addEventListener("click", function(){
+    var info = document.getElementById("ubicacionInfo");
+    if(!navigator.geolocation){
+      info.hidden = false;
+      info.textContent = "Tu navegador no permite compartir ubicación.";
+      return;
+    }
+    info.hidden = false;
+    info.textContent = "Buscando tu ubicación…";
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var lat = pos.coords.latitude, lon = pos.coords.longitude;
+      fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon + "&zoom=10&accept-language=es")
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          var addr = data.address || {};
+          var lugar = addr.city || addr.town || addr.village || addr.municipality || addr.county || "tu zona";
+          var region = addr.state || "";
+          info.textContent = "Detectamos que estás cerca de " + lugar + (region ? ", " + region : "") +
+            ". No tenemos un mapa exacto de sucursales — revisa las casillas de abajo y desmarca las cadenas que no tengas cerca (por ejemplo, en regiones extremas como Aysén o Magallanes, cadenas como Jumbo o Santa Isabel suelen no tener sucursales).";
+        })
+        .catch(function(){
+          info.textContent = "No pudimos identificar tu ubicación exacta. Revisa las casillas de abajo igualmente.";
+        });
+    }, function(){
+      info.textContent = "No se pudo obtener tu ubicación (¿diste permiso al navegador?). Puedes elegir las casillas de abajo a mano.";
+    });
+  });
+
+  renderStoresGrid();
 
   var listEl = document.getElementById("listItems");
   var emptyEl = document.getElementById("emptyList");
@@ -881,7 +991,7 @@
       addRow.className = "price-add-row";
 
       var sel = document.createElement("select");
-      SUPERMARKETS.forEach(function(m){
+      SUPERMARKETS.filter(function(m){ return state.tiendasSeleccionadas.indexOf(m) !== -1; }).forEach(function(m){
         var opt = document.createElement("option");
         opt.value = m; opt.textContent = m;
         sel.appendChild(opt);
