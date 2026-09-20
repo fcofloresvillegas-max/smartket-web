@@ -628,8 +628,8 @@
         }
       });
 
-      // Normaliza texto para que espacios, mayúsculas, tildes o caracteres
-      // invisibles no hagan aparecer el mismo producto varias veces.
+      // Normalizar elimina diferencias invisibles de espacios, mayúsculas,
+      // tildes y caracteres especiales que hacen pasar duplicados.
       function claveTexto(valor){
         return String(valor == null ? "" : valor)
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -650,9 +650,9 @@
         // Puede haber productos distintos (distinto EAN/variante) que se
         // muestran con el mismo nombre, tienda y precio - para la persona
         // se ven igual, asi que en este panel solo se muestra una vez.
-        // Como las filas vienen ordenadas por precio, basta una entrada por
-        // producto y tienda; así no reaparecen registros históricos con otro
-        // precio ni duplicados idénticos.
+        // Una sola oferta por producto y supermercado. Como top3Fuente ya
+        // está ordenado por el precio más bajo, se conserva la mejor fila y
+        // se descartan duplicados o registros históricos del mismo producto.
         var clave = claveTexto(row.nombre) + "|" + claveTexto(mercadoNombre);
         if(top3VistosClave[clave]) continue;
         top3VistosClave[clave] = true;
