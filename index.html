@@ -237,6 +237,7 @@
     align-items:center;
     gap:6px;
     margin-top:2px;
+    flex-wrap:wrap;
   }
   .item-qty-input{
     width:56px;
@@ -249,6 +250,15 @@
   }
   .item-unit-select{
     padding:4px 6px;
+    font-size:0.82rem;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--bg);
+    color:var(--ink-soft);
+  }
+  .item-marca-input{
+    width:120px;
+    padding:4px 8px;
     font-size:0.82rem;
     border-radius:8px;
     border:1px solid var(--line);
@@ -528,18 +538,30 @@
     return (unidad === "ml" || unidad === "cc") ? valor : valor * 1000;
   }
 
+  function parseCantidadPorPaquete(nombre){
+    // Detecta packs tipo "Huevos 30 un", "12 unidades", "x24" - para poder
+    // comparar precio por huevo/unidad individual, no por paquete completo
+    // (si no, un pack de 30 puede "ganar" solo por venir en formato grande).
+    if(!nombre) return null;
+    var match = nombre.match(/(\d+)\s*(un|unid(?:ades)?|uds?)\b/i);
+    if(match) return parseInt(match[1], 10);
+    var matchX = nombre.match(/\bx\s*(\d+)\b/i);
+    if(matchX) return parseInt(matchX[1], 10);
+    return null;
+  }
+
   // Unidades donde tiene sentido comparar por precio unitario (normalizado
   // por kg o por litro) en vez de por precio total del paquete: son las
   // que la persona elige cuando piensa "a granel" (una bolsa de arroz, un
-  // bidon de aceite), a diferencia de "un", "g" o "ml" donde quiere ese
+  // bidon de aceite), a diferencia de "g" o "ml" donde quiere ese
   // tamaño puntual y le importa el precio del paquete tal cual.
   var UNIDADES_A_GRANEL = ["kg", "L"];
 
-  async function fetchPreciosAutomaticos(nombreItem, unidadItem){
+  async function fetchPreciosAutomaticos(nombreItem, unidadItem, marcaPreferida){
     var termino = normalize(nombreItem);
     var compararPorUnitario = UNIDADES_A_GRANEL.indexOf(unidadItem) !== -1;
     var url = SUPABASE_URL + "/rest/v1/precios_ultimos"
-      + "?select=precio_actual,precio_unitario,unidad,nombre,supermercados(nombre)"
+      + "?select=precio_actual,precio_unitario,unidad,nombre,marca,supermercados(nombre)"
       + "&termino_busqueda=ilike." + encodeURIComponent("*" + termino + "*")
       + "&order=" + (compararPorUnitario ? "precio_unitario.asc.nullslast" : "precio_actual.asc")
       + "&limit=200";
@@ -558,6 +580,15 @@
         var market = row.supermercados && row.supermercados.nombre;
         return market && state.tiendasSeleccionadas.indexOf(market) !== -1;
       });
+
+      // Filtro opcional por marca preferida (ej: "Tucapel").
+      if(marcaPreferida && marcaPreferida.trim()){
+        var marcaNorm = sinTildes(marcaPreferida.trim().toLowerCase());
+        rows = rows.filter(function(row){
+          var marcaRow = sinTildes((row.marca || "").toLowerCase());
+          return marcaRow.indexOf(marcaNorm) !== -1;
+        });
+      }
 
       // Reglas de exclusion cargadas desde el panel admin: si el nombre
       // contiene el texto marcado, se descarta. Una regla creada para "pan"
@@ -603,10 +634,19 @@
       }
 
       // Con que valor se compara: precio por kg/litro si eligieron "granel",
-      // o precio del paquete tal cual si eligieron un, g o ml.
+      // precio por unidad individual si es "un" y se detecta un pack
+      // (ej: "Huevos 30 un" -> precio / 30 = precio por huevo, para no
+      // comparar packs de distinto tamaño como si fueran lo mismo), o el
+      // precio del paquete tal cual en el resto de los casos (g, ml).
       function valorComparable(row){
         if(compararPorUnitario){
           return row.precio_unitario != null ? row.precio_unitario : row.precio_actual;
+        }
+        if(unidadItem === "un" && row.precio_actual != null){
+          var cantidad = parseCantidadPorPaquete(row.nombre);
+          if(cantidad && cantidad > 1){
+            return row.precio_actual / cantidad;
+          }
         }
         return row.precio_actual;
       }
@@ -628,14 +668,6 @@
         }
       });
 
-      // Normalizar elimina diferencias invisibles de espacios, mayúsculas,
-      // tildes y caracteres especiales que hacen pasar duplicados.
-      function claveTexto(valor){
-        return String(valor == null ? "" : valor)
-          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-          .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-      }
-
       var top3Fuente = rows.slice().sort(function(a, b){
         var va = valorComparable(a), vb = valorComparable(b);
         if(va == null) return 1;
@@ -650,17 +682,25 @@
         // Puede haber productos distintos (distinto EAN/variante) que se
         // muestran con el mismo nombre, tienda y precio - para la persona
         // se ven igual, asi que en este panel solo se muestra una vez.
-        // Una sola oferta por producto y supermercado. Como top3Fuente ya
-        // está ordenado por el precio más bajo, se conserva la mejor fila y
-        // se descartan duplicados o registros históricos del mismo producto.
-        var clave = claveTexto(row.nombre) + "|" + claveTexto(mercadoNombre);
+        var clave = (row.nombre || "") + "|" + mercadoNombre + "|" + row.precio_actual;
         if(top3VistosClave[clave]) continue;
         top3VistosClave[clave] = true;
+
+        var precioUnitarioMostrar = row.precio_unitario;
+        var unidadMostrar = row.unidad;
+        if(unidadItem === "un" && row.precio_actual != null){
+          var cantidadPack = parseCantidadPorPaquete(row.nombre);
+          if(cantidadPack && cantidadPack > 1){
+            precioUnitarioMostrar = Math.round(row.precio_actual / cantidadPack);
+            unidadMostrar = "$" + precioUnitarioMostrar + " x un";
+          }
+        }
+
         top3.push({
           nombre: row.nombre,
           precio: row.precio_actual,
-          precioUnitario: row.precio_unitario,
-          unidad: row.unidad,
+          precioUnitario: precioUnitarioMostrar,
+          unidad: unidadMostrar,
           mercado: mercadoNombre
         });
       }
@@ -845,7 +885,7 @@
     var key = normalize(item.name);
     state.autoLoading[key] = true;
     renderList();
-    return fetchPreciosAutomaticos(item.name, item.unit).then(function(resultado){
+    return fetchPreciosAutomaticos(item.name, item.unit, item.marca).then(function(resultado){
       if(Object.keys(resultado.porSupermercado).length > 0){
         state.prices[key] = Object.assign({}, state.prices[key], resultado.porSupermercado);
         persistPrices();
@@ -912,6 +952,13 @@
         unitSelect.appendChild(o);
       });
 
+      var marcaInput = document.createElement("input");
+      marcaInput.type = "text";
+      marcaInput.placeholder = "Marca (opcional)";
+      marcaInput.className = "item-marca-input";
+      marcaInput.value = item.marca || "";
+      marcaInput.setAttribute("aria-label", "Marca preferida de " + item.name);
+
       qtyInput.addEventListener("change", function(){
         var nuevaQty = parseFloat(qtyInput.value);
         item.qty = isNaN(nuevaQty) ? item.qty : nuevaQty;
@@ -923,9 +970,15 @@
         persistList();
         actualizarPreciosAutomaticos(item);
       });
+      marcaInput.addEventListener("change", function(){
+        item.marca = marcaInput.value.trim();
+        persistList();
+        actualizarPreciosAutomaticos(item);
+      });
 
       qtyEditRow.appendChild(qtyInput);
       qtyEditRow.appendChild(unitSelect);
+      qtyEditRow.appendChild(marcaInput);
 
       main.appendChild(nameEl);
       main.appendChild(qtyEditRow);
@@ -1138,7 +1191,7 @@
     if(!name) return;
     var qty = parseFloat(fd.get("itemQty")) || 1;
     var unit = fd.get("itemUnit");
-    var nuevoItem = {id: uid(), name: name, qty: qty, unit: unit, done: false};
+    var nuevoItem = {id: uid(), name: name, qty: qty, unit: unit, marca: "", done: false};
     state.list.push(nuevoItem);
     persistList();
     e.target.reset();
