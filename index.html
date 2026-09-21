@@ -502,7 +502,7 @@
     </div>
   </section>
 
-  <footer>Hecho por <a href="https://smsi-web.vercel.app/" style="color:inherit;">SMSI</a> · Servicio de Mantención y Soluciones Informáticas</footer>
+  <footer>Hecho por <a href="https://smsi-web.vercel.app/" style="color:inherit;">SMSI</a> · Servicio de Mantención y Soluciones Informáticas<br><span id="contadorVisitas"></span></footer>
 </div>
 
 <script>
@@ -1275,6 +1275,35 @@
 
   renderList();
   renderCompare();
+
+  // Contador de visitas: solo cuenta una vez por sesion del navegador
+  // (no cada vez que se recarga la pagina), y no guarda nada sobre quien
+  // eres - solo un numero total.
+  (function(){
+    var contadorEl = document.getElementById("contadorVisitas");
+    var yaContada = sessionStorage.getItem("smartket_visita_contada");
+    var rpcHeaders = {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+      "Content-Type": "application/json"
+    };
+    var promesa;
+    if(!yaContada){
+      promesa = fetch(SUPABASE_URL + "/rest/v1/rpc/incrementar_visita", {
+        method: "POST", headers: rpcHeaders, body: "{}"
+      }).then(function(r){ return r.json(); });
+      try{ sessionStorage.setItem("smartket_visita_contada", "1"); }catch(e){}
+    } else {
+      promesa = fetch(SUPABASE_URL + "/rest/v1/rpc/obtener_visitas", {
+        method: "POST", headers: rpcHeaders, body: "{}"
+      }).then(function(r){ return r.json(); });
+    }
+    promesa.then(function(total){
+      if(typeof total === "number" && contadorEl){
+        contadorEl.textContent = total.toLocaleString("es-CL") + (total === 1 ? " persona ha usado Smartket" : " personas han usado Smartket");
+      }
+    }).catch(function(){ /* si falla, simplemente no se muestra el contador */ });
+  })();
 })();
 </script>
 </body>
