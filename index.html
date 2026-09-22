@@ -574,7 +574,7 @@
       + "?select=precio_actual,precio_unitario,unidad,nombre,marca,supermercados!inner(nombre)"
       + "&termino_busqueda=ilike." + encodeURIComponent("*" + termino + "*")
       + "&supermercados.nombre=in.(" + tiendasFiltro + ")"
-      + "&order=" + (compararPorUnitario ? "precio_unitario.asc.nullslast" : "precio_actual.asc")
+      + "&order=precio_actual.asc"
       + "&limit=200";
     try{
       var res = await fetch(url, {
