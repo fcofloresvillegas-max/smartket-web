@@ -560,9 +560,20 @@
   async function fetchPreciosAutomaticos(nombreItem, unidadItem, marcaPreferida){
     var termino = normalize(nombreItem);
     var compararPorUnitario = UNIDADES_A_GRANEL.indexOf(unidadItem) !== -1;
+
+    if(state.tiendasSeleccionadas.length === 0){
+      return {porSupermercado: {}, top3: []};
+    }
+
+    // El filtro por tienda va DENTRO de la consulta (con !inner), no solo
+    // despues de traer los datos - si no, una tienda con pocas filas (como
+    // Provimarket, que no siempre calcula precio por kg) puede quedar fuera
+    // del limite de 200 filas antes de que lleguemos a filtrarla.
+    var tiendasFiltro = state.tiendasSeleccionadas.map(function(t){ return encodeURIComponent(t); }).join(",");
     var url = SUPABASE_URL + "/rest/v1/precios_ultimos"
-      + "?select=precio_actual,precio_unitario,unidad,nombre,marca,supermercados(nombre)"
+      + "?select=precio_actual,precio_unitario,unidad,nombre,marca,supermercados!inner(nombre)"
       + "&termino_busqueda=ilike." + encodeURIComponent("*" + termino + "*")
+      + "&supermercados.nombre=in.(" + tiendasFiltro + ")"
       + "&order=" + (compararPorUnitario ? "precio_unitario.asc.nullslast" : "precio_actual.asc")
       + "&limit=200";
     try{
@@ -710,7 +721,7 @@
     }
   }
 
-  var SUPERMARKETS = ["Jumbo","Lider","Santa Isabel","A Cuenta","Tottus","Colun","Super 10","Unimarc","Provimarket"];
+  var SUPERMARKETS = ["Jumbo","Lider","Santa Isabel","A Cuenta","Tottus","Colun","Super 10","Unimarc"];
 
   function safeGet(key, fallback){
     try{
@@ -815,6 +826,10 @@
           state.tiendasSeleccionadas = state.tiendasSeleccionadas.filter(function(n){ return n !== nombre; });
         }
         persistTiendas();
+        // Los precios "auto" que ya estaban guardados pueden quedar viejos
+        // (de una tienda que se acaba de desmarcar) - se vuelven a buscar
+        // para cada producto de la lista con el filtro nuevo.
+        state.list.forEach(function(item){ actualizarPreciosAutomaticos(item); });
         renderList();
         renderCompare();
       });
