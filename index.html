@@ -662,16 +662,14 @@
           if(gramosRow){ esperado = Math.round(row.precio_actual / (gramosRow / 1000)); }
           else if(mlRow){ esperado = Math.round(row.precio_actual / (mlRow / 1000)); }
         }
-        if(row.precio_unitario != null){
-          if(esperado != null && esperado > 0){
-            var razon = row.precio_unitario / esperado;
-            if(razon < 0.5 || razon > 2){
-              return esperado;
-            }
-          }
-          return row.precio_unitario;
-        }
-        return esperado;
+        // Se prefiere el calculado desde el nombre siempre que se pueda: ya
+        // vimos que el precio_unitario guardado puede fallar por margenes
+        // muy distintos (10% en unos casos, 100x en otros), asi que no
+        // alcanza con corregir solo los casos extremos - mejor confiar en
+        // el propio calculo, que es directo y verificable, y usar el
+        // guardado solo cuando no se pudo calcular (ej: sin peso en el nombre).
+        if(esperado != null) return esperado;
+        return row.precio_unitario;
       }
 
       function valorComparable(row){
