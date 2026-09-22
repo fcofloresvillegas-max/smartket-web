@@ -651,7 +651,28 @@
       // precio del paquete tal cual en el resto de los casos (g, ml).
       function valorComparable(row){
         if(compararPorUnitario){
-          return row.precio_unitario != null ? row.precio_unitario : row.precio_actual;
+          // El precio_unitario guardado a veces viene mal calculado por
+          // algun scraper (visto en A Cuenta con paquetes chicos: guarda
+          // valores que no calzan con precio_actual / peso del nombre).
+          // Si el guardado se aleja demasiado de lo esperado, se usa el
+          // calculado desde el nombre en vez de confiar ciegamente en el dato.
+          var esperado = null;
+          if(row.precio_actual != null){
+            var gramosRow = parseGramosDesdeNombre(row.nombre);
+            var mlRow = parseMlDesdeNombre(row.nombre);
+            if(gramosRow){ esperado = Math.round(row.precio_actual / (gramosRow / 1000)); }
+            else if(mlRow){ esperado = Math.round(row.precio_actual / (mlRow / 1000)); }
+          }
+          if(row.precio_unitario != null){
+            if(esperado != null && esperado > 0){
+              var razon = row.precio_unitario / esperado;
+              if(razon < 0.5 || razon > 2){
+                return esperado;
+              }
+            }
+            return row.precio_unitario;
+          }
+          return esperado != null ? esperado : row.precio_actual;
         }
         if(unidadItem === "un" && row.precio_actual != null){
           var cantidad = parseCantidadPorPaquete(row.nombre);
@@ -699,7 +720,16 @@
 
         var precioUnitarioMostrar = row.precio_unitario;
         var unidadMostrar = row.unidad;
-        if(unidadItem === "un" && row.precio_actual != null){
+        if(compararPorUnitario){
+          // Usa el mismo valor ya verificado (por si el guardado no calzaba
+          // con precio_actual / peso del nombre), para que lo mostrado sea
+          // consistente con el orden real del ranking.
+          var valorVerificado = valorComparable(row);
+          if(valorVerificado != null && valorVerificado !== row.precio_unitario){
+            precioUnitarioMostrar = Math.round(valorVerificado);
+            unidadMostrar = "$" + precioUnitarioMostrar + " x " + (unidadItem === "L" ? "L" : "kg");
+          }
+        } else if(unidadItem === "un" && row.precio_actual != null){
           var cantidadPack = parseCantidadPorPaquete(row.nombre);
           if(cantidadPack && cantidadPack > 1){
             precioUnitarioMostrar = Math.round(row.precio_actual / cantidadPack);
