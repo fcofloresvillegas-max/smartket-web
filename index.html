@@ -893,8 +893,19 @@
           var addr = data.address || {};
           var lugar = addr.city || addr.town || addr.village || addr.municipality || addr.county || "tu zona";
           var region = addr.state || "";
+          // No tenemos un mapa real de sucursales por cadena, asi que no se
+          // puede saber con certeza cuales tiene cerca - lo que si se puede
+          // hacer es dejarlas todas marcadas de nuevo como punto de partida
+          // (por si quedaron desmarcadas de una prueba anterior), para que
+          // la persona solo tenga que desmarcar las que sepa que no tiene.
+          state.tiendasSeleccionadas = SUPERMARKETS.slice();
+          persistTiendas();
+          renderStoresGrid();
+          state.list.forEach(function(item){ actualizarPreciosAutomaticos(item); });
+          renderList();
+          renderCompare();
           info.textContent = "Detectamos que estás cerca de " + lugar + (region ? ", " + region : "") +
-            ". No tenemos un mapa exacto de sucursales — revisa las casillas de abajo y desmarca las cadenas que no tengas cerca (por ejemplo, en regiones extremas como Aysén o Magallanes, cadenas como Jumbo o Santa Isabel suelen no tener sucursales).";
+            ". Marcamos todas las tiendas de nuevo — no tenemos un mapa exacto de sucursales, así que desmarca abajo las cadenas que sepas que no tienes cerca (por ejemplo, en regiones extremas como Aysén o Magallanes, cadenas como Jumbo o Santa Isabel suelen no tener sucursales).";
         })
         .catch(function(){
           clearTimeout(seVencio);
