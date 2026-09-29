@@ -864,8 +864,9 @@
         renderList();
         renderCompare();
       });
+      var ETIQUETAS_TIENDA = {"Lider": "Líder / Líder Express"};
       var span = document.createElement("span");
-      span.textContent = nombre;
+      span.textContent = ETIQUETAS_TIENDA[nombre] || nombre;
       label.appendChild(input);
       label.appendChild(span);
       grid.appendChild(label);
@@ -883,9 +884,12 @@
     info.textContent = "Buscando tu ubicación…";
     navigator.geolocation.getCurrentPosition(function(pos){
       var lat = pos.coords.latitude, lon = pos.coords.longitude;
-      fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon + "&zoom=10&accept-language=es")
+      var controlador = new AbortController();
+      var seVencio = setTimeout(function(){ controlador.abort(); }, 8000);
+      fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon + "&zoom=10&accept-language=es", {signal: controlador.signal})
         .then(function(r){ return r.json(); })
         .then(function(data){
+          clearTimeout(seVencio);
           var addr = data.address || {};
           var lugar = addr.city || addr.town || addr.village || addr.municipality || addr.county || "tu zona";
           var region = addr.state || "";
@@ -893,11 +897,12 @@
             ". No tenemos un mapa exacto de sucursales — revisa las casillas de abajo y desmarca las cadenas que no tengas cerca (por ejemplo, en regiones extremas como Aysén o Magallanes, cadenas como Jumbo o Santa Isabel suelen no tener sucursales).";
         })
         .catch(function(){
-          info.textContent = "No pudimos identificar tu ubicación exacta. Revisa las casillas de abajo igualmente.";
+          clearTimeout(seVencio);
+          info.textContent = "No pudimos identificar tu ubicación exacta (puede ser por señal débil). Revisa las casillas de abajo igualmente.";
         });
     }, function(){
       info.textContent = "No se pudo obtener tu ubicación (¿diste permiso al navegador?). Puedes elegir las casillas de abajo a mano.";
-    });
+    }, {timeout: 10000});
   });
 
   renderStoresGrid();
