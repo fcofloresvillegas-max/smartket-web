@@ -814,7 +814,8 @@
     {termino:"bebida gaseosa", unidad:"L"}, {termino:"bebida energética", unidad:"L"},
     {termino:"bebida isotónica", unidad:"L"}, {termino:"jugo", unidad:"L"},
     {termino:"néctar", unidad:"L"}, {termino:"jugo en polvo", unidad:"un"},
-    {termino:"papas fritas", unidad:"un"}
+    {termino:"papas fritas", unidad:"un"},
+    {termino:"papel higiénico", unidad:"un"}
   ];
 
   function uid(){
@@ -1299,7 +1300,10 @@
   // Llena las sugerencias del buscador y, si lo que se escribe calza con un
   // producto conocido, preselecciona la unidad correcta (kg, L, un) sola.
   var datalistProductos = document.getElementById("sugerenciasProductos");
-  SUGERENCIAS_PRODUCTOS.forEach(function(p){
+  var sugerenciasOrdenadas = SUGERENCIAS_PRODUCTOS.slice().sort(function(a, b){
+    return a.termino.localeCompare(b.termino, "es");
+  });
+  sugerenciasOrdenadas.forEach(function(p){
     var opt = document.createElement("option");
     opt.value = p.termino;
     datalistProductos.appendChild(opt);
