@@ -539,11 +539,12 @@
   }
 
   function parseCantidadPorPaquete(nombre){
-    // Detecta packs tipo "Huevos 30 un", "12 unidades", "x24" - para poder
-    // comparar precio por huevo/unidad individual, no por paquete completo
-    // (si no, un pack de 30 puede "ganar" solo por venir en formato grande).
+    // Detecta packs tipo "Huevos 30 un", "12 unidades", "x24", "4 Rollos",
+    // "150 Hojas" - para poder comparar precio por huevo/rollo/hoja/toalla
+    // individual, no por paquete completo (si no, un pack grande puede
+    // "ganar" solo por venir en formato grande).
     if(!nombre) return null;
-    var match = nombre.match(/(\d+)\s*(un|unid(?:ades)?|uds?)\b/i);
+    var match = nombre.match(/(\d+)\s*(un|unid(?:ades)?|uds?|rollos?|hojas?|toallas?|servilletas?|pañales?)\b/i);
     if(match) return parseInt(match[1], 10);
     var matchX = nombre.match(/\bx\s*(\d+)\b/i);
     if(matchX) return parseInt(matchX[1], 10);
